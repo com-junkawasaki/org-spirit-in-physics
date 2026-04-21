@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-cloudflare';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { sveltex } from '@nvl/sveltex';
 
@@ -12,15 +12,7 @@ const config = {
 		})
 	],
 	kit: {
-		adapter: adapter({
-			// default options are shown. On some platforms
-			// these options are set automatically — see below
-			pages: 'build',
-			assets: 'build',
-			fallback: 'spa.html', // SPA mode fallback
-			precompress: false,
-			strict: false
-		}),
+		adapter: adapter(),
 		prerender: {
 			handleHttpError: 'warn',
 			handleUnseenRoutes: 'ignore'

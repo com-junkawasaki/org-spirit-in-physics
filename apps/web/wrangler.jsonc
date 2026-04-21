@@ -1,0 +1,21 @@
+{
+  "name": "spirit-in-physics-web",
+  "compatibility_date": "2026-04-12",
+  "assets": {
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "routes": [
+    {
+      "pattern": "spirit-in-physics.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.spirit-in-physics.com",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "PUBLIC_API_MODE": "worker-partial",
+    "PUBLIC_API_URL": "/api"
+  }
+}

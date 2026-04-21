@@ -5,6 +5,7 @@
   import { resolveRoute } from "$lib/routing";
   import { onMount } from "svelte";
   import { timelineClient } from "$lib/connect";
+  import { runtimeConfig } from "$lib/env.svelte";
   import { theme } from "$lib/theme.svelte";
 
   let scrollY = $state(0);
@@ -138,6 +139,10 @@
   }
 
   onMount(async () => {
+    if (!runtimeConfig.API_ENABLED) {
+      generateMockData();
+      return;
+    }
     const startTime = performance.now();
     console.log('[DEBUG] LandingView.svelte: onMount started');
     console.log('[DEBUG] Loading data for researchers:', RESEARCHER_IDS);
@@ -217,7 +222,7 @@
 
         const researcherOffset = mergedWordNodes.length;
         const wordNodes: WordNode[] = response.points
-          .map(p => {
+          .map((p: any) => {
             // Buf messages have getters, spreading doesn't work well
             const word = p.word || (p as any).w || '';
             const reactionValue = p.reactionValue ?? (p as any).rv ?? 0;
@@ -227,11 +232,11 @@
               reactionValue
             };
           })
-          .filter((p): p is any & { word: string } => !!p.word && p.word !== 'Unknown')
+          .filter((p: any): p is any & { word: string } => !!p.word && p.word !== 'Unknown')
           .slice(0, 100) // Reduced from 300 for performance
-          .map((d, i) => {
+          .map((d: any, i: number) => {
             const word = d.word;
-            const vec = vectors?.vectors?.find(v => v.word === word);
+            const vec = vectors?.vectors?.find((v: any) => v.word === word);
             const emotion: Record<string, number> = {};
             if (vec) {
               const keys = ['joy', 'sadness', 'anger', 'fear', 'disgust', 'calm', 'focus', 'surprise', 'confusion', 'excitement'];
@@ -778,5 +783,3 @@
     .entry-cards-section { padding: 4rem 1.5rem; }
   }
 </style>
-
-

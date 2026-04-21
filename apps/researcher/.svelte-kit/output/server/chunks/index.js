@@ -1245,12 +1245,6 @@ function bind_props(props_parent, props_now) {
     }
   }
 }
-function ensure_array_like(array_like_or_iterator) {
-  if (array_like_or_iterator) {
-    return array_like_or_iterator.length !== void 0 ? array_like_or_iterator : Array.from(array_like_or_iterator);
-  }
-  return [];
-}
 export {
   attr_style as a,
   attr_class as b,
@@ -1258,7 +1252,6 @@ export {
   attr as d,
   stringify as e,
   bind_props as f,
-  ensure_array_like as g,
   head as h,
   is_passive_event as i,
   render as r,

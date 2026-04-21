@@ -2,6 +2,7 @@
   import AnalyticsOverview from "$lib/components/researcher/AnalyticsOverview.svelte";
   import TimelineVisualization from "$lib/components/researcher/TimelineVisualization.svelte";
   import { participantClient } from "$lib/connect";
+  import { runtimeConfig } from "$lib/env.svelte";
   import type { Participant } from "../generated/proto/participant/v1/participant_pb";
   import { onMount } from "svelte";
   import * as m from "$lib/paraglide/messages.js";
@@ -12,6 +13,11 @@
   let selectedParticipantId = $state<string | null>(null);
 
   onMount(async () => {
+    if (!runtimeConfig.API_ENABLED) {
+      loading = false;
+      error = "Cloudflare Worker API is not enabled for the researcher dashboard yet.";
+      return;
+    }
     try {
       const response = await participantClient.getParticipants({});
       participants = response.participants;

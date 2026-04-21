@@ -10,3 +10,15 @@ tasks:
     desc: Show where the Kubernetes assets were archived
     cmds:
       - printf 'archive/kubernetes\n'
+
+  db-migrate-local:
+    desc: Apply local D1 migrations for the Cloudflare Worker API
+    dir: apps/api-worker
+    cmds:
+      - pnpm db:migrate:local
+
+  db-migrate-remote:
+    desc: Apply remote D1 migrations for the Cloudflare Worker API
+    dir: apps/api-worker
+    cmds:
+      - pnpm db:migrate:remote

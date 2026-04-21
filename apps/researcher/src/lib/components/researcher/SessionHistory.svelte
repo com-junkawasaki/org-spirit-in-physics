@@ -1,39 +1,20 @@
 <script lang="ts">
-  // Mock session data
-  const recentSessions = [
-    {
-      id: "sess_1",
-      participantId: "P001",
-      date: "2025-12-26 14:20",
-      type: "言語連想検査",
-      status: "完了",
-      artifacts: ["video", "image", "csv"]
-    },
-    {
-      id: "sess_2",
-      participantId: "P002",
-      date: "2025-12-26 13:45",
-      type: "言語連想検査",
-      status: "完了",
-      artifacts: ["video", "image"]
-    },
-    {
-      id: "sess_3",
-      participantId: "P003",
-      date: "2025-12-26 12:10",
-      type: "性格診断",
-      status: "処理中",
-      artifacts: ["image"]
-    },
-  ];
+  let { sessions = [] }: { sessions?: any[] } = $props();
 
   function getArtifactIcon(type: string) {
-    switch(type) {
+    switch (type) {
       case 'video': return '🎥';
       case 'image': return '🖼️';
       case 'csv': return '📊';
+      case 'audio': return '🎙️';
       default: return '📁';
     }
+  }
+
+  function formatDate(timestamp: number | null | undefined) {
+    if (!timestamp) return "Unknown";
+    const date = new Date(timestamp);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 </script>
 
@@ -42,7 +23,6 @@
     <select>
       <option>全ての検査タイプ</option>
       <option>言語連想検査</option>
-      <option>性格診断</option>
     </select>
     <select>
       <option>全てのステータス</option>
@@ -53,17 +33,17 @@
   </div>
 
   <div class="timeline">
-    {#each recentSessions as session}
+    {#each sessions as session}
       <div class="session-card">
         <div class="session-time">
-          <span class="date">{session.date.split(' ')[0]}</span>
-          <span class="time">{session.date.split(' ')[1]}</span>
+          <span class="date">{formatDate(session.startTs).split(' ')[0]}</span>
+          <span class="time">{formatDate(session.startTs).split(' ')[1]}</span>
         </div>
         <div class="session-main">
           <div class="session-header">
-            <h4>{session.type}</h4>
-            <span class="status-tag" class:processing={session.status === '処理中'}>
-              {session.status}
+            <h4>言語連想検査 Session {session.sessionIndex}</h4>
+            <span class="status-tag" class:processing={session.status !== 'completed'}>
+              {session.status === 'completed' ? '完了' : '処理中'}
             </span>
           </div>
           <div class="session-details">
@@ -71,15 +51,19 @@
             <span class="session-id">ID: {session.id}</span>
           </div>
           <div class="artifacts">
-            {#each session.artifacts as art}
-              <button class="artifact-link" title={art}>
-                {getArtifactIcon(art)} {art}
-              </button>
-            {/each}
+            {#if session.artifacts?.length}
+              {#each session.artifacts as art}
+                <a class="artifact-link" title={art.artifactType} href={art.publicUrl}>
+                  {getArtifactIcon(art.artifactType)} {art.artifactType}
+                </a>
+              {/each}
+            {:else}
+              <span class="session-id">No artifacts yet</span>
+            {/if}
           </div>
         </div>
         <div class="session-actions">
-          <button class="btn-detail">詳細レポート</button>
+          <button class="btn-detail" disabled>詳細レポート</button>
         </div>
       </div>
     {/each}
@@ -198,6 +182,7 @@
     display: flex;
     gap: 0.5rem;
     margin-top: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .artifact-link {
@@ -212,6 +197,7 @@
     align-items: center;
     gap: 0.375rem;
     transition: all 0.2s;
+    text-decoration: none;
   }
 
   .artifact-link:hover {
@@ -227,12 +213,9 @@
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 500;
-    cursor: pointer;
+    cursor: not-allowed;
     transition: background 0.2s;
-  }
-
-  .btn-detail:hover {
-    background: #334155;
+    opacity: 0.7;
   }
 
   @media (max-width: 768px) {
@@ -251,4 +234,3 @@
     }
   }
 </style>
-

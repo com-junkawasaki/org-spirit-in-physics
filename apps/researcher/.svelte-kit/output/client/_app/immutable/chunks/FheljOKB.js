@@ -1,1 +1,0 @@
-import{w as u,d as _,a4 as o,h as t,R as g,_ as i,P as l,K as d,Q as p,L as m}from"./Cjdl2KBY.js";function E(n,r){let s=null,f=t;var a;if(t){s=p;for(var e=m(document.head);e!==null&&(e.nodeType!==g||e.data!==n);)e=i(e);if(e===null)l(!1);else{var y=i(e);e.remove(),d(y)}}t||(a=document.head.appendChild(u()));try{_(()=>r(a),o)}finally{f&&(l(!0),d(s))}}export{E as h};

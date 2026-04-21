@@ -1,40 +1,168 @@
-import { createConnectTransport } from "@connectrpc/connect-web";
-import { createClient } from "@connectrpc/connect";
 import { runtimeConfig } from "$lib/env.svelte";
 
-// Import proto services from local generated files
-import { ParticipantService } from "@/generated/proto/participant/v1/participant_connect";
-import { SessionService } from "@/generated/proto/session/v1/session_connect";
-import { TimelineService } from "@/generated/proto/timeline/v1/timeline_connect";
-import { StorageService } from "@/generated/proto/storage/v1/storage_connect";
-import { PreferenceService } from "@/generated/proto/preference/v1/preference_connect";
-import { ImportService } from "@/generated/proto/import/v1/import_connect";
-
-/**
- * Get default base URL based on environment
- */
-function getDefaultBaseUrl(): string {
+function getApiBaseUrl(): string {
   const { PUBLIC_API_URL, IS_CAPACITOR } = runtimeConfig;
-
-  // Browser environment
-  if (typeof window !== 'undefined') {
-    // Capacitor iOS Simulator uses localhost
-    if (IS_CAPACITOR) {
-      return "http://localhost:8080";
-    }
-    // SPA mode uses relative path handled by Envoy/Gateway
-    return "/api";
+  if (typeof window !== "undefined" && IS_CAPACITOR) {
+    return "http://localhost:8080/api";
   }
-  // Server-side or fallback
-  return PUBLIC_API_URL || "https://spirit-in-physics.com/api";
+  return PUBLIC_API_URL || "/api";
 }
 
-const baseUrl = getDefaultBaseUrl();
-const transport = createConnectTransport({ baseUrl });
+async function fetchJson<T = any>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+    ...init,
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(body?.message || body?.error || `Request failed: ${response.status}`);
+  }
+  return body as T;
+}
 
-export const participantClient = createClient(ParticipantService, transport);
-export const sessionClient = createClient(SessionService, transport);
-export const timelineClient = createClient(TimelineService, transport);
-export const storageClient = createClient(StorageService, transport);
-export const preferenceClient = createClient(PreferenceService, transport);
-export const importClient = createClient(ImportService, transport);
+function buildTimelineQuery(payload: { participantId: string; sessionId?: string }): string {
+  const params = new URLSearchParams({ participantId: payload.participantId });
+  if (payload.sessionId) {
+    params.set("sessionId", payload.sessionId);
+  }
+  return `?${params.toString()}`;
+}
+
+export const participantClient = {
+  async getParticipants(_: Record<string, never>): Promise<any> {
+    return fetchJson("/participants");
+  },
+  async getParticipantByEmail({ email }: { email: string }): Promise<any> {
+    return fetchJson(
+      `/participants/by-email?email=${encodeURIComponent(email)}`,
+    );
+  },
+  async createParticipant(payload: Record<string, unknown>): Promise<any> {
+    return fetchJson("/participants", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async getStimulusWords(_: Record<string, never>): Promise<any> {
+    return fetchJson("/stimulus-words");
+  },
+  async startAssessment(payload: Record<string, unknown>): Promise<any> {
+    return fetchJson("/assessments/start", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async signalStartSession(payload: Record<string, unknown>): Promise<any> {
+    return fetchJson("/assessments/session-start", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async signalWordResponse(payload: Record<string, unknown>): Promise<any> {
+    return fetchJson("/assessments/word-response", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async signalArtifact(payload: Record<string, unknown>): Promise<any> {
+    return fetchJson("/assessments/artifact", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async completeAssessment(payload: Record<string, unknown>): Promise<any> {
+    return fetchJson("/assessments/complete", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export const sessionClient = {
+  async getSessions(payload: { participantId?: string } = {}): Promise<any> {
+    const query = payload.participantId
+      ? `?participantId=${encodeURIComponent(payload.participantId)}`
+      : "";
+    return fetchJson(`/sessions${query}`);
+  },
+};
+
+export const timelineClient = {
+  async getIntegratedTimeline(
+    payload: { participantId: string; sessionId?: string },
+    init?: RequestInit,
+  ): Promise<any> {
+    return fetchJson(`/timeline/integrated${buildTimelineQuery(payload)}`, init);
+  },
+  async getEmotionVectors(
+    payload: { participantId: string; sessionId?: string },
+    init?: RequestInit,
+  ): Promise<any> {
+    return fetchJson(`/timeline/emotion-vectors${buildTimelineQuery(payload)}`, init);
+  },
+  async getAnalysis(
+    payload: { participantId: string; sessionId?: string },
+    init?: RequestInit,
+  ): Promise<any> {
+    return fetchJson(`/timeline/analysis${buildTimelineQuery(payload)}`, init);
+  },
+  async getWordStatistics(
+    payload: { participantId: string; sessionId?: string },
+    init?: RequestInit,
+  ): Promise<any> {
+    return fetchJson(`/timeline/word-statistics${buildTimelineQuery(payload)}`, init);
+  },
+  async getWordAggregates(
+    payload: { participantId: string; sessionId?: string },
+    init?: RequestInit,
+  ): Promise<any> {
+    return fetchJson(`/timeline/word-aggregates${buildTimelineQuery(payload)}`, init);
+  },
+};
+
+export const storageClient = {
+  async uploadArtifact(payload: {
+    participantId: string;
+    fileName: string;
+    fileData: Uint8Array;
+    contentType: string;
+    artifactType: string;
+    sessionIndex?: number;
+  }): Promise<any> {
+    const binary = payload.fileData;
+    let base64 = "";
+    for (let i = 0; i < binary.length; i += 0x8000) {
+      const chunk = binary.subarray(i, i + 0x8000);
+      base64 += String.fromCharCode(...chunk);
+    }
+    return fetchJson("/storage/upload", {
+      method: "POST",
+      body: JSON.stringify({
+        participantId: payload.participantId,
+        fileName: payload.fileName,
+        fileDataBase64: btoa(base64),
+        contentType: payload.contentType,
+        artifactType: payload.artifactType,
+        sessionIndex: payload.sessionIndex,
+      }),
+    });
+  },
+};
+
+export const preferenceClient = {
+  async getPreference(_: { userId: string }): Promise<any> {
+    return { preference: { theme: "system" } };
+  },
+  async updatePreference(_: Record<string, unknown>): Promise<any> {
+    return { success: true };
+  },
+};
+
+export const importClient = {
+  async importParticipants(..._: any[]): Promise<any> {
+    throw new Error("Cloudflare Worker import API is not implemented yet.");
+  },
+};
