@@ -16,6 +16,11 @@
 
   // Watch for user changes and fetch participant
   $effect(() => {
+    if (!runtimeConfig.API_ENABLED) {
+      loading = false;
+      error = "Cloudflare Worker API is not enabled for personal analysis yet.";
+      return;
+    }
     const user = clerk?.user;
     if (user) {
       const email = user.primaryEmailAddress?.emailAddress;

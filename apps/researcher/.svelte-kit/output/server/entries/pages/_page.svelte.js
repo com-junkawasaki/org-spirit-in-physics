@@ -1,7 +1,7 @@
 import { i as escape_html } from "../../chunks/context.js";
 import "d3";
 import "../../chunks/TimelineVisualization.svelte_svelte_type_style_lang.js";
-import "../../chunks/connect.js";
+import "../../chunks/env.svelte.js";
 import { l as loading_data } from "../../chunks/messages.js";
 function _page($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {

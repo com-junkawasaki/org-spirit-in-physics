@@ -1,0 +1,39 @@
+{
+  "name": "spirit-in-physics-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-12",
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "spirit-in-physics.com/api/*",
+      "zone_name": "spirit-in-physics.com"
+    },
+    {
+      "pattern": "www.spirit-in-physics.com/api/*",
+      "zone_name": "spirit-in-physics.com"
+    },
+    {
+      "pattern": "researcher.spirit-in-physics.com/api/*",
+      "zone_name": "spirit-in-physics.com"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "spirit-in-physics",
+      "database_id": "f52a6c82-1f2a-444b-9ee6-a241b61bcbe5",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ARTIFACTS",
+      "bucket_name": "spirit-in-physics-artifacts"
+    }
+  ],
+  "vars": {
+    "API_MODE": "worker-partial"
+  }
+}

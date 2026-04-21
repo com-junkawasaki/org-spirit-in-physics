@@ -406,17 +406,10 @@ function ClerkProvider_1($$renderer, $$props) {
 }
 function ResearcherGuard($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
-    const RESEARCHER_ORG_ID = "org_39Eb89xAUCDs7FtQL9YzJJBsqLm";
     let { children, fallback } = $$props;
-    const clerk = runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
-    const user = clerk?.user;
+    runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
     const isResearcher = (() => {
       if (!runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY) return true;
-      if (user?.organizationMemberships) {
-        const hasResearcherOrg = user.organizationMemberships.some((membership) => membership.organization?.id === RESEARCHER_ORG_ID);
-        if (hasResearcherOrg) return true;
-      }
-      if (user?.publicMetadata?.role === "researcher") return true;
       return false;
     })();
     if (isResearcher) {

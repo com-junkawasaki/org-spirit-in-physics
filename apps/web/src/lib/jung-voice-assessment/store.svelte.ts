@@ -1,4 +1,5 @@
 import { participantClient, storageClient } from "$lib/connect";
+import { runtimeConfig } from "$lib/env.svelte";
 import type { StimulusWord } from "@/generated/proto/participant/v1/participant_pb";
 import * as m from "$lib/paraglide/messages.js";
 import { untrack } from "svelte";
@@ -90,6 +91,10 @@ class KawasakiStore {
   }
 
   async checkExistingParticipant(email: string) {
+    if (!runtimeConfig.API_ENABLED) {
+      this.error = "Cloudflare Worker API is not enabled for participant lookup yet.";
+      return false;
+    }
     try {
       const response = await participantClient.getParticipantByEmail({ email });
       if (response.participant) {
@@ -125,6 +130,10 @@ class KawasakiStore {
 
   async createParticipantOnServer(email: string, agreements: any) {
     if (!this.participantId) return;
+    if (!runtimeConfig.API_ENABLED) {
+      this.error = "Cloudflare Worker API is not enabled for participant creation yet.";
+      throw new Error(this.error);
+    }
 
     try {
       // #region agent log
@@ -176,6 +185,7 @@ class KawasakiStore {
 
   async startAssessmentWorkflow() {
     if (!this.participantId || !this.participantEmail) return;
+    if (!runtimeConfig.API_ENABLED) return;
     try {
       await participantClient.startAssessment({
         participantId: this.participantId,
@@ -194,6 +204,10 @@ class KawasakiStore {
   }
 
   async loadStimulusWords() {
+    if (!runtimeConfig.API_ENABLED) {
+      this.error = "Cloudflare Worker API is not enabled for stimulus delivery yet.";
+      return;
+    }
     try {
       const response = await participantClient.getStimulusWords({});
       this.stimulusWords = response.words;
@@ -293,7 +307,7 @@ class KawasakiStore {
 
       // Signal Temporal Completion
       if (this.participantId) {
-        participantClient.completeAssessment({ participantId: this.participantId })
+        participantClient.completeAssessment({ participantId: this.participantId, session: this.currentSession })
           .catch(e => console.error("Failed to signal completion:", e));
       }
     }
@@ -331,7 +345,8 @@ class KawasakiStore {
         participantId: this.participantId,
         stimulusWordId: stimulusWord.id,
         responseWord: response.responseWord,
-        reactionTimeMs: response.reactionTimeMs
+        reactionTimeMs: response.reactionTimeMs,
+        session: this.currentSession
       }).catch(e => console.error("Failed to signal word response:", e));
     }
 
@@ -340,6 +355,10 @@ class KawasakiStore {
 
   async uploadArtifact(blob: Blob, type: 'video' | 'image' | 'audio', sessionIndex: number) {
     if (!this.participantId) return;
+    if (!runtimeConfig.API_ENABLED) {
+      this.error = "Cloudflare Worker API is not enabled for artifact uploads yet.";
+      return;
+    }
 
     const fileName = `session-${sessionIndex}-${type}-${Date.now()}.${type === 'video' ? 'webm' : type === 'image' ? 'jpg' : 'webm'}`;
     const contentType = type === 'video' ? 'video/webm' : type === 'image' ? 'image/jpeg' : 'audio/webm';
@@ -353,7 +372,8 @@ class KawasakiStore {
         fileName,
         fileData,
         contentType,
-        artifactType: type
+        artifactType: type,
+        sessionIndex
       });
 
       this.logEvent('artifact_uploaded', { type, url: response.publicUrl, session: sessionIndex });
@@ -386,4 +406,3 @@ class KawasakiStore {
 }
 
 export const kawasakiStore = new KawasakiStore();
-

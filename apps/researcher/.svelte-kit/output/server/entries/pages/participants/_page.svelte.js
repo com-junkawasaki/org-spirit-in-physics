@@ -9,7 +9,7 @@ import { b as base } from "../../../chunks/server.js";
 import { h as getContext } from "../../../chunks/context.js";
 import { g as get } from "../../../chunks/index2.js";
 import { r as runtime } from "../../../chunks/runtime2.js";
-import "../../../chunks/connect.js";
+import "../../../chunks/env.svelte.js";
 const getStores = () => {
   const stores$1 = getContext("__svelte__");
   return {

@@ -2,7 +2,7 @@ import { b as attr_class, d as attr, e as stringify, h as head } from "../../../
 import { p as page } from "../../../../chunks/index3.js";
 import "d3";
 import "../../../../chunks/TimelineVisualization.svelte_svelte_type_style_lang.js";
-import "../../../../chunks/connect.js";
+import "../../../../chunks/env.svelte.js";
 import { i as escape_html } from "../../../../chunks/context.js";
 const EMOTION_KEYS = ["joy", "sadness", "anger", "fear", "surprise", "disgust", "calm", "focus", "excitement", "confusion"];
 const METADATA_FIELDS = /* @__PURE__ */ new Set([

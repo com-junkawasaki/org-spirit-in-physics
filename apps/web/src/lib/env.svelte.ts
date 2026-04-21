@@ -16,7 +16,10 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
         if (browser && (window as any).Capacitor !== undefined) {
             return "http://localhost:8080";
         }
-        return "https://spirit-in-physics.com/api";
+        return "/api";
+    }
+    if (key === 'PUBLIC_API_MODE' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
+        return "worker-partial";
     }
     return (env as any)[key] || defaultValue;
 };
@@ -27,9 +30,13 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
 export const runtimeConfig = {
     get PUBLIC_CLERK_PUBLISHABLE_KEY() { return getEnv('PUBLIC_CLERK_PUBLISHABLE_KEY'); },
     get PUBLIC_API_URL() { return getEnv('PUBLIC_API_URL'); },
+    get PUBLIC_API_MODE() { return getEnv('PUBLIC_API_MODE'); },
+    get API_ENABLED() { return getEnv('PUBLIC_API_MODE') !== 'disabled'; },
+    get PARTIAL_API() { return getEnv('PUBLIC_API_MODE') !== 'full'; },
     get IS_CAPACITOR() { return browser && (window as any).Capacitor !== undefined; }
 };
 
 // For backward compatibility and ease of use, export individual getters or simple values if they don't change
 export const PUBLIC_CLERK_PUBLISHABLE_KEY = getEnv('PUBLIC_CLERK_PUBLISHABLE_KEY');
 export const PUBLIC_API_URL = getEnv('PUBLIC_API_URL');
+export const PUBLIC_API_MODE = getEnv('PUBLIC_API_MODE');

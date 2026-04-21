@@ -1,6 +1,7 @@
 <script lang="ts">
   import ParticipantList from "$lib/components/researcher/ParticipantList.svelte";
   import { participantClient } from "$lib/connect";
+  import { runtimeConfig } from "$lib/env.svelte";
   import type { Participant } from "../../generated/proto/participant/v1/participant_pb";
   import { onMount } from "svelte";
 
@@ -9,6 +10,11 @@
   let error = $state<string | null>(null);
 
   onMount(async () => {
+    if (!runtimeConfig.API_ENABLED) {
+      error = "Cloudflare Worker API is not enabled for participant browsing yet.";
+      loading = false;
+      return;
+    }
     try {
       const response = await participantClient.getParticipants({});
       participants = response.participants;
