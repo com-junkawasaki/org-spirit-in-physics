@@ -11,9 +11,6 @@
   },
   "packageManager": "pnpm@10.26.2",
   "devDependencies": {
-    "@bufbuild/buf": "^1.61.0",
-    "@bufbuild/protoc-gen-es": "1.10.1",
-    "@connectrpc/protoc-gen-connect-es": "1.7.0",
     "@inlang/paraglide-js": "^1.11.8",
     "@sveltejs/adapter-cloudflare": "^4.9.0",
     "@sveltejs/kit": "^2.49.2",
@@ -32,18 +29,15 @@
     "vite": "^7.3.0"
   },
   "dependencies": {
-    "sirv-cli": "^3.0.1",
+    "@inlang/paraglide-sveltekit": "0.15.5",
     "@spirit/consent": "workspace:*",
     "@spirit/experiment": "workspace:*",
     "@spirit/visualization": "workspace:*",
-    "@bufbuild/protobuf": "^1.10.1",
-    "@connectrpc/connect": "^1.7.0",
-    "@connectrpc/connect-web": "^1.7.0",
-    "@inlang/paraglide-sveltekit": "0.15.5",
     "@threlte/core": "^8.3.1",
     "@threlte/extras": "^9.7.1",
     "d3": "^7.9.0",
     "d3-force-3d": "^3.0.6",
+    "sirv-cli": "^3.0.1",
     "svelte-clerk": "0.20.1",
     "three": "^0.182.0"
   }

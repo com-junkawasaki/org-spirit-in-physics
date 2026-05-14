@@ -3,17 +3,16 @@ import { cors } from 'hono/cors';
 import type { Kysely } from 'kysely';
 import { STIMULUS_WORDS } from './stimulus-words';
 import { createDb } from './db/client';
+import { runAssessmentGraph } from './graph/assessment';
+import { runTimelineGraph } from './graph/timeline';
 import type {
   ArtifactRow,
   AssessmentEventRow,
   Database,
   NewArtifactRow,
-  NewAssessmentEventRow,
   NewParticipantRow,
-  NewSessionRow,
   ParticipantPatch,
   ParticipantRow,
-  SessionPatch,
   SessionRow,
 } from './db/schema';
 
@@ -367,7 +366,7 @@ app.get('/api/capabilities', (c) => {
   return c.json({
     ok: true,
     runtime: 'cloudflare-worker',
-    available: ['health', 'capabilities', 'participants', 'stimulus-words', 'assessment-events', 'sessions', 'storage', 'timeline'],
+    available: ['health', 'capabilities', 'participants', 'stimulus-words', 'assessment-events', 'assessment-graph', 'sessions', 'storage', 'timeline', 'timeline-graph'],
     pending: ['preferences', 'imports'],
     mode: c.env.API_MODE ?? 'worker-partial',
   });
@@ -521,11 +520,10 @@ app.get('/api/timeline/integrated', async (c) => {
     return c.json({ message: 'participantId is required' }, 400);
   }
   const requestedSessionIndex = parseSessionIndex(c.req.query('sessionId'));
-  const events = await readAssessmentEvents(getDb(c), participantId);
-  const points = buildTimelinePoints(events, requestedSessionIndex);
+  const result = await runTimelineGraph(getDb(c), participantId, requestedSessionIndex);
   return c.json({
-    points,
-    analysis: buildAnalysis(points),
+    points: result.points,
+    analysis: result.analysis,
   });
 });
 
@@ -535,9 +533,8 @@ app.get('/api/timeline/analysis', async (c) => {
     return c.json({ message: 'participantId is required' }, 400);
   }
   const requestedSessionIndex = parseSessionIndex(c.req.query('sessionId'));
-  const events = await readAssessmentEvents(getDb(c), participantId);
-  const points = buildTimelinePoints(events, requestedSessionIndex);
-  return c.json(buildAnalysis(points));
+  const result = await runTimelineGraph(getDb(c), participantId, requestedSessionIndex);
+  return c.json(result.analysis);
 });
 
 app.get('/api/timeline/word-statistics', async (c) => {
@@ -546,9 +543,8 @@ app.get('/api/timeline/word-statistics', async (c) => {
     return c.json({ message: 'participantId is required' }, 400);
   }
   const requestedSessionIndex = parseSessionIndex(c.req.query('sessionId'));
-  const events = await readAssessmentEvents(getDb(c), participantId);
-  const points = buildTimelinePoints(events, requestedSessionIndex);
-  return c.json({ statistics: buildWordStatistics(points) });
+  const result = await runTimelineGraph(getDb(c), participantId, requestedSessionIndex);
+  return c.json({ statistics: result.wordStatistics });
 });
 
 app.get('/api/timeline/word-aggregates', async (c) => {
@@ -557,9 +553,8 @@ app.get('/api/timeline/word-aggregates', async (c) => {
     return c.json({ message: 'participantId is required' }, 400);
   }
   const requestedSessionIndex = parseSessionIndex(c.req.query('sessionId'));
-  const events = await readAssessmentEvents(getDb(c), participantId);
-  const points = buildTimelinePoints(events, requestedSessionIndex);
-  return c.json({ aggregates: buildWordAggregates(points) });
+  const result = await runTimelineGraph(getDb(c), participantId, requestedSessionIndex);
+  return c.json({ aggregates: result.wordAggregates });
 });
 
 app.get('/api/timeline/emotion-vectors', async (c) => {
@@ -568,93 +563,38 @@ app.get('/api/timeline/emotion-vectors', async (c) => {
     return c.json({ message: 'participantId is required' }, 400);
   }
   const requestedSessionIndex = parseSessionIndex(c.req.query('sessionId'));
-  const events = await readAssessmentEvents(getDb(c), participantId);
-  const points = buildTimelinePoints(events, requestedSessionIndex);
-  return c.json({ vectors: buildEmotionVectors(points) });
+  const result = await runTimelineGraph(getDb(c), participantId, requestedSessionIndex);
+  return c.json({ vectors: result.emotionVectors });
 });
-
-async function insertAssessmentEvent(c: { env: Bindings }, eventType: string, payload: Record<string, unknown>) {
-  const db = getDb(c);
-  const id = crypto.randomUUID();
-  const eventValues: NewAssessmentEventRow = {
-    id,
-    participant_id: String(payload.participantId ?? ''),
-    event_type: eventType,
-    payload_json: JSON.stringify(payload),
-    created_at_ms: Date.now(),
-  };
-  await db.insertInto('assessment_events').values(eventValues).execute();
-}
 
 app.post('/api/assessments/start', async (c) => {
   const payload = await c.req.json<Record<string, unknown>>();
-  await insertAssessmentEvent(c, 'start', payload);
-  return c.json({ workflowId: `assessment-${payload.participantId ?? 'unknown'}`, runId: crypto.randomUUID() });
+  const result = await runAssessmentGraph(getDb(c), 'start', payload);
+  return c.json({ workflowId: result.workflowId, runId: result.runId, eventId: result.eventId });
 });
 
 app.post('/api/assessments/session-start', async (c) => {
   const payload = await c.req.json<Record<string, unknown>>();
-  await insertAssessmentEvent(c, 'session-start', payload);
-  const db = getDb(c);
-  const now = Date.now();
-  const participantId = String(payload.participantId ?? '');
-  const sessionIndex = Number(payload.sessionNumber ?? 0);
-  const sessionId = crypto.randomUUID();
-  const sessionValues: NewSessionRow = {
-    id: sessionId,
-    participant_id: participantId,
-    session_index: sessionIndex,
-    status: 'in_progress',
-    start_ts_ms: now,
-    end_ts_ms: null,
-    created_at_ms: now,
-    updated_at_ms: now,
-  };
-  const sessionPatch: SessionPatch = {
-    status: 'in_progress',
-    updated_at_ms: now,
-  };
-  await db
-    .insertInto('sessions')
-    .values(sessionValues)
-    .onConflict((oc) =>
-      oc.columns(['participant_id', 'session_index']).doUpdateSet(sessionPatch),
-    )
-    .execute();
-  return c.json({ success: true });
+  const result = await runAssessmentGraph(getDb(c), 'session-start', payload);
+  return c.json({ success: true, runId: result.runId, eventId: result.eventId });
 });
 
 app.post('/api/assessments/word-response', async (c) => {
   const payload = await c.req.json<Record<string, unknown>>();
-  await insertAssessmentEvent(c, 'word-response', payload);
-  return c.json({ success: true });
+  const result = await runAssessmentGraph(getDb(c), 'word-response', payload);
+  return c.json({ success: true, runId: result.runId, eventId: result.eventId });
 });
 
 app.post('/api/assessments/artifact', async (c) => {
   const payload = await c.req.json<Record<string, unknown>>();
-  await insertAssessmentEvent(c, 'artifact', payload);
-  return c.json({ success: true });
+  const result = await runAssessmentGraph(getDb(c), 'artifact', payload);
+  return c.json({ success: true, runId: result.runId, eventId: result.eventId });
 });
 
 app.post('/api/assessments/complete', async (c) => {
   const payload = await c.req.json<Record<string, unknown>>();
-  await insertAssessmentEvent(c, 'complete', payload);
-  const db = getDb(c);
-  const participantId = String(payload.participantId ?? '');
-  const sessionIndex = Number(payload.session ?? payload.sessionIndex ?? payload.sessionNumber ?? 0);
-  const now = Date.now();
-  await db
-    .updateTable('sessions')
-    .set({
-      status: 'completed',
-      end_ts_ms: now,
-      updated_at_ms: now,
-    })
-    .where('participant_id', '=', participantId)
-    .where('session_index', '=', sessionIndex)
-    .where('status', '!=', 'completed')
-    .execute();
-  return c.json({ success: true });
+  const result = await runAssessmentGraph(getDb(c), 'complete', payload);
+  return c.json({ success: true, runId: result.runId, eventId: result.eventId });
 });
 
 app.all('/api/*', (c) => {

@@ -1,6 +1,6 @@
 import { participantClient, storageClient } from "$lib/connect";
 import { runtimeConfig } from "$lib/env.svelte";
-import type { StimulusWord } from "@/generated/proto/participant/v1/participant_pb";
+import type { StimulusWord } from "$lib/api-types";
 import * as m from "$lib/paraglide/messages.js";
 import { untrack } from "svelte";
 
@@ -117,7 +117,7 @@ class KawasakiStore {
           email
         });
 
-        // Ensure Temporal Workflow is running
+        // Ensure the assessment graph is running.
         await this.startAssessmentWorkflow();
         return true;
       }
@@ -136,7 +136,6 @@ class KawasakiStore {
     }
 
     try {
-      // #region agent log
       console.log('AGENT_LOG: Request payload:', {
         id: this.participantId,
         email,
@@ -149,8 +148,6 @@ class KawasakiStore {
         gender: this.demographics.gender,
         isPublic: true
       });
-      fetch('http://127.0.0.1:7247/ingest/dd38c440-a27e-40c0-b740-1186fa2e0e03',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store.svelte.ts:127',message:'Creating participant on server',data:{participantId:this.participantId,email,demographics:this.demographics},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       await participantClient.createParticipant({
         id: this.participantId,
         email,
@@ -170,13 +167,10 @@ class KawasakiStore {
       this.logEvent('participant_created_on_server');
       this.error = null;
 
-      // Start Temporal Assessment Workflow
+      // Start the Worker-backed assessment graph.
       await this.startAssessmentWorkflow();
     } catch (e: any) {
       console.error("Failed to create participant on server:", e);
-      // #region agent log
-      fetch('http://127.0.0.1:7247/ingest/dd38c440-a27e-40c0-b740-1186fa2e0e03',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store.svelte.ts:149',message:'Failed to create participant',data:{error:String(e),code:e.code,message:e.message,details:e.details},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       this.error = m.participant_creation_failed({ error: e.message || m.unknown_error() });
       this.logEvent('participant_creation_failed', { error: String(e) });
       throw e;
@@ -283,7 +277,7 @@ class KawasakiStore {
     this.currentWordIndex = 0;
     this.logEvent('session_started', { session: sessionNumber, numberOfWords });
 
-    // Signal Temporal
+    // Signal the assessment graph.
     if (this.participantId) {
       participantClient.signalStartSession({
         participantId: this.participantId,
@@ -305,7 +299,7 @@ class KawasakiStore {
       }
       this.logEvent('test_completed');
 
-      // Signal Temporal Completion
+      // Signal assessment graph completion.
       if (this.participantId) {
         participantClient.completeAssessment({ participantId: this.participantId, session: this.currentSession })
           .catch(e => console.error("Failed to signal completion:", e));
@@ -339,7 +333,7 @@ class KawasakiStore {
       reaction: response.reactionTimeMs,
     });
 
-    // Signal Temporal
+    // Signal the assessment graph.
     if (this.participantId) {
       participantClient.signalWordResponse({
         participantId: this.participantId,
@@ -378,7 +372,7 @@ class KawasakiStore {
 
       this.logEvent('artifact_uploaded', { type, url: response.publicUrl, session: sessionIndex });
 
-      // Signal Temporal
+      // Signal the assessment graph.
       await participantClient.signalArtifact({
         participantId: this.participantId,
         artifactType: type,

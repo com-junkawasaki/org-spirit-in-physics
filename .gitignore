@@ -44,6 +44,9 @@ Thumbs.db
 *.log
 logs/
 
+# Local Cloudflare/Wrangler state
+.wrangler/
+
 # Archive (keep but don't track changes)
 archive/
 _archive/

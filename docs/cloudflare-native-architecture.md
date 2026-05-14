@@ -31,7 +31,7 @@ Archive Kubernetes and redesign the runtime to be Cloudflare-native:
 - `apps/researcher` becomes either:
   - a second Pages project on `researcher.spirit-in-physics.com`, or
   - another route handled by the same Pages project.
-- The current Go API and Python importer are replaced incrementally by Workers.
+- The archived Go API and Python importer are replaced incrementally by Workers.
 - `D1` replaces the current operational database for transactional and queryable metadata.
 - `R2` stores binary artifacts, source CSV files, generated media, and large JSON payloads.
 - `Durable Objects` own session ingestion and ordered writes where strict sequencing matters.

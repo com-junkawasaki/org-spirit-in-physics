@@ -5,7 +5,7 @@
   import { runtimeConfig } from "$lib/env.svelte";
   import { onMount } from "svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import type { Participant } from "../../generated/proto/participant/v1/participant_pb";
+  import type { Participant } from "$lib/api-types";
 
   let participantId = $state<string | null>(null);
   let participant = $state<Participant | null>(null);

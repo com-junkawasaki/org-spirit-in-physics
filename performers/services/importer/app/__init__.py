@@ -1,2 +1,0 @@
-# Import service application package
-

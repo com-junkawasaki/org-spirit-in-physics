@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Participant } from "../../../generated/proto/participant/v1/participant_pb";
+  import type { Participant } from "$lib/api-types";
 
   let { participants } = $props<{ participants: Participant[] }>();
 
@@ -218,4 +218,3 @@
     }
   }
 </style>
-

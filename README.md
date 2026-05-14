@@ -4,6 +4,7 @@
 
 - Active target runtime: Cloudflare native (`Pages + Workers + D1 + R2 + Durable Objects`)
 - Archived runtime: Kubernetes / GKE under [archive/kubernetes](/Users/junkawasaki/github/spirit-in-physics/archive/kubernetes)
+- Archived legacy services: [archive/legacy-runtime](/Users/junkawasaki/github/spirit-in-physics/archive/legacy-runtime), documented in [docs/legacy-runtime-archive.md](/Users/junkawasaki/github/spirit-in-physics/docs/legacy-runtime-archive.md)
 - Active infra design: [docs/cloudflare-native-architecture.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-native-architecture.md)
 
 本プロジェクトの 3D 可視化は、感情に誘導された距離（メトリック／カーネル）で語集合に幾何（距離空間）を与え、その距離を最もよく保存するように低次元へ埋め込み、さらにテンセグリティ物理で自己支持的な立体構造へ収束させるモデルです。
@@ -65,17 +66,16 @@
 ### 10. 実行
 ```
 pnpm i
-# ローカル開発環境の起動 (Tilt)
-tilt up
+# Cloudflare Worker API
+pnpm --dir apps/api-worker dev
 ```
-ブラウザで `http://spirit.localhost/researcher` へアクセス。UI で σ, Spectral Init, Shell/Constraints 等を調整します。
+Worker API は `http://localhost:8787/api` で起動します。UI で σ, Spectral Init, Shell/Constraints 等を調整する場合は Cloudflare Pages/SvelteKit 側の dev server を使用します。
 
 ### 11. サービス一覧
-- Portal: `http://spirit.localhost`
-- API (ConnectRPC): `http://spirit.localhost/api`
-- Import Service: `http://spirit.localhost/import`
-- Temporal UI: `http://spirit.localhost/temporal`
-- MinIO Console: `http://spirit.localhost/minio-console`
+- API Worker: `apps/api-worker`
+- Public frontend: `apps/web`
+- Researcher frontend: `apps/researcher`
+- Legacy Go API / Python importer / docker-compose: `archive/legacy-runtime`
 
 ### 12. 設計の要点（Why it works）
 - スペクトラル初期化が「感情距離」の幾何を低次元で大域的に保存。
@@ -92,4 +92,3 @@ tilt up
 実装の中心ファイル:
 - `apps/researcher/src/components/TimelineVisualization.tsx`
 - `apps/researcher/src/components/Force3DWordGraph.tsx`
-

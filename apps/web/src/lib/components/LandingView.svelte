@@ -159,7 +159,7 @@
         const fetchStart = performance.now();
         console.log(`[DEBUG] Starting API calls for researcher ${id}`);
         try {
-          // ConnectRPC supports signal for cancellation/timeout
+          // Worker REST adapter supports signal for cancellation/timeout.
           const [timeline, vectors, analysis] = await Promise.all([
             timelineClient.getIntegratedTimeline({ participantId: id }, { signal: controller.signal }),
             timelineClient.getEmotionVectors({ participantId: id }, { signal: controller.signal }),

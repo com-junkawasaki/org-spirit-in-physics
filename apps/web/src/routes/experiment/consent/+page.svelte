@@ -33,7 +33,7 @@
       // Initialize store with participant info
       kawasakiStore.initializeParticipant(id, demographics, mode);
       
-      // Create participant on server (this also starts the Temporal workflow)
+      // Create participant on the Worker API and start the assessment graph.
       await kawasakiStore.createParticipantOnServer(email, agreements);
       
       // Move to device check / session
@@ -72,4 +72,3 @@
     </div>
   </div>
 </div>
-

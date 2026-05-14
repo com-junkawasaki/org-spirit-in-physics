@@ -3,7 +3,7 @@
   import TimelineVisualization from "$lib/components/researcher/TimelineVisualization.svelte";
   import { participantClient } from "$lib/connect";
   import { runtimeConfig } from "$lib/env.svelte";
-  import type { Participant } from "../generated/proto/participant/v1/participant_pb";
+  import type { Participant } from "$lib/api-types";
   import { onMount } from "svelte";
   import * as m from "$lib/paraglide/messages.js";
 

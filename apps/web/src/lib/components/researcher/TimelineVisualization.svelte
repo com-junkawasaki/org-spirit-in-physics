@@ -28,7 +28,7 @@
     WordAggregate, 
     EmotionVector, 
     WordStatistics 
-  } from '../../../generated/proto/timeline/v1/timeline_pb';
+  } from '$lib/api-types';
   
   let {
     participantId,
@@ -147,7 +147,7 @@
     error = null;
     
     try {
-      // Use the new integrated endpoint that runs on TS Temporal
+      // Use the integrated Worker endpoint backed by the timeline graph.
       const response = await timelineClient.getIntegratedTimeline({ 
         participantId, 
         sessionId: sessionId || undefined 

@@ -7,9 +7,10 @@ tasks:
       - sed -n '1,220p' docs/cloudflare-native-architecture.md
 
   archive-location:
-    desc: Show where the Kubernetes assets were archived
+    desc: Show where retired runtime assets were archived
     cmds:
       - printf 'archive/kubernetes\n'
+      - printf 'archive/legacy-runtime\n'
 
   db-migrate-local:
     desc: Apply local D1 migrations for the Cloudflare Worker API

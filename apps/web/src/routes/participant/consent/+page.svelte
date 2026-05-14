@@ -24,15 +24,12 @@
 
   async function handleConsent(id: string, email: string, agreements: any, demographics: any) {
     console.log("Consent received:", { id, email, agreements, demographics, mode });
-    // #region agent log
-    fetch('http://127.0.0.1:7247/ingest/dd38c440-a27e-40c0-b740-1186fa2e0e03',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'+page.svelte:11',message:'handleConsent called',data:{id,email,demographics,mode},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     
     try {
       // 参加者情報の初期化（ストア）
       kawasakiStore.initializeParticipant(id, demographics, mode);
       
-      // API 連携: 参加者作成
+      // API 連携: 参加者作成と assessment graph 起動
       await kawasakiStore.createParticipantOnServer(email, agreements);
       
       kawasakiStore.startPreflight();
@@ -58,4 +55,3 @@
     padding: 0 2rem;
   }
 </style>
-

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Participant } from "@/generated/proto/participant/v1/participant_pb";
+  import type { Participant } from "$lib/api-types";
   import { resolveRoute } from "$lib/routing";
 
   let { participants } = $props<{ participants: Participant[] }>();
@@ -11,6 +11,20 @@
       (p.gender || "").toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
+
+  function formatCreatedAt(value: Participant["createdAt"]) {
+    if (!value) return "---";
+    const ms = typeof value === "number" ? value : Number(value.seconds ?? 0) * 1000;
+    return Number.isFinite(ms) && ms > 0
+      ? new Date(ms).toLocaleString("ja-JP", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      : "---";
+  }
 </script>
 
 <div class="participant-list-container">
@@ -56,13 +70,7 @@
               </span>
             </td>
             <td>
-              {p.createdAt ? new Date(Number(p.createdAt.seconds) * 1000).toLocaleString('ja-JP', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              }) : '---'}
+              {formatCreatedAt(p.createdAt)}
             </td>
             <td>
               <div class="row-actions">
@@ -233,4 +241,3 @@
     color: #94a3b8;
   }
 </style>
-
