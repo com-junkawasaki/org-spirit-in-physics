@@ -51,9 +51,9 @@ Typical records that must be preserved:
 
 - MX / TXT for Google Workspace (if any)
 - TXT for SPF / DKIM / DMARC
-- TXT for domain verification (Apple, Clerk, etc.)
+- TXT for domain verification (Apple, etc.)
 - CAA
-- Any third-party CNAMEs (Clerk `clkng`, auth providers, etc.)
+- Any third-party CNAMEs (auth providers, etc.)
 
 ## Step 2 — Add the zone to Cloudflare
 
@@ -129,7 +129,6 @@ curl -I https://spirit-in-physics.com/api/health
 Also check:
 
 - Email flow (send/receive test) — MX/SPF/DKIM/DMARC preserved
-- Clerk production sign-in — `clerk.spirit-in-physics.com` CNAME intact
 - iOS app → API calls succeed
 
 ## Step 7 — Decommission Google Cloud DNS
@@ -155,8 +154,6 @@ Do not rely on rollback after step 7.
 
 ## Known integrations to re-check
 
-- **Clerk**: production key `pk_live_...` in `claude.md`. The Clerk CNAME must
-  survive the zone migration.
 - **Apple App Store Connect**: associated domains, if any, defined in
   `apps/mobile/ios`.
 - **Hume AI** webhooks (if any) — verify destination host still resolves.
