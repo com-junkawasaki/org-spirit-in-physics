@@ -77,10 +77,10 @@ class KawasakiStore {
     });
   }
 
-  syncWithClerk(user: any) {
+  syncWithAuthUser(user: { id: string; email: string } | null | undefined) {
     if (user) {
       this.participantId = user.id;
-      this.participantEmail = user.primaryEmailAddress?.emailAddress || null;
+      this.participantEmail = user.email || null;
       if (typeof window !== 'undefined') {
         localStorage.setItem('participantId', this.participantId || '');
         if (this.participantEmail) {

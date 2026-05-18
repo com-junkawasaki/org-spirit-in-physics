@@ -12,12 +12,6 @@ const config: CapacitorConfig = {
       'sip.junkawasaki.com',
       'spirit-in-physics.com',
       '*.spirit-in-physics.com',
-      // Clerk domains for authentication
-      '*.clerk.accounts.dev',
-      '*.clerk.com',
-      'clerk.com',
-      'accounts.clerk.com',
-      'charming-monkey-45.clerk.accounts.dev',  // Test Clerk instance
       // Local development
       'localhost',
       '127.0.0.1'

@@ -2,10 +2,12 @@
 
 ### Deployment Direction
 
-- Active target runtime: Cloudflare native (`Pages + Workers + D1 + R2 + Durable Objects`)
-- Archived runtime: Kubernetes / GKE under [archive/kubernetes](/Users/junkawasaki/github/spirit-in-physics/archive/kubernetes)
-- Archived legacy services: [archive/legacy-runtime](/Users/junkawasaki/github/spirit-in-physics/archive/legacy-runtime), documented in [docs/legacy-runtime-archive.md](/Users/junkawasaki/github/spirit-in-physics/docs/legacy-runtime-archive.md)
-- Active infra design: [docs/cloudflare-native-architecture.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-native-architecture.md)
+- Active target runtime: Cloudflare native — Workers (with SvelteKit static assets), D1, R2, optional Durable Objects.
+- Public DNS: Cloudflare (zone `spirit-in-physics.com` in account `ai-gftd-cloud`). Registrar remains Squarespace. Cutover record: [docs/cloudflare-dns-cutover.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-dns-cutover.md), ADR: [docs/adr-2026-05-17-cloudflare-dns-and-gcp-decommission.md](/Users/junkawasaki/github/spirit-in-physics/docs/adr-2026-05-17-cloudflare-dns-and-gcp-decommission.md).
+- Archived runtimes:
+  - Kubernetes / GKE — [archive/kubernetes](/Users/junkawasaki/github/spirit-in-physics/archive/kubernetes) (manifests + build outputs).
+  - Legacy Go API / Python importer / docker-compose — [archive/legacy-runtime](/Users/junkawasaki/github/spirit-in-physics/archive/legacy-runtime), documented in [docs/legacy-runtime-archive.md](/Users/junkawasaki/github/spirit-in-physics/docs/legacy-runtime-archive.md).
+- Active infra design: [docs/cloudflare-native-architecture.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-native-architecture.md). Runtime decision: [docs/adr-2026-05-14-cloudflare-worker-d1-langgraph-pregel.md](/Users/junkawasaki/github/spirit-in-physics/docs/adr-2026-05-14-cloudflare-worker-d1-langgraph-pregel.md).
 
 本プロジェクトの 3D 可視化は、感情に誘導された距離（メトリック／カーネル）で語集合に幾何（距離空間）を与え、その距離を最もよく保存するように低次元へ埋め込み、さらにテンセグリティ物理で自己支持的な立体構造へ収束させるモデルです。
 
@@ -69,7 +71,12 @@ pnpm i
 # Cloudflare Worker API
 pnpm --dir apps/api-worker dev
 ```
-Worker API は `http://localhost:8787/api` で起動します。UI で σ, Spectral Init, Shell/Constraints 等を調整する場合は Cloudflare Pages/SvelteKit 側の dev server を使用します。
+Worker API は `http://localhost:8787/api` で起動します。UI で σ, Spectral Init, Shell/Constraints 等を調整する場合は SvelteKit dev server (`pnpm --filter spirit-in-physics-web dev` / `pnpm --filter spirit-in-physics-researcher dev`) を併用します。
+
+Production の Worker URL:
+- https://spirit-in-physics-web.04-feasts-minded.workers.dev
+- https://spirit-in-physics-researcher.04-feasts-minded.workers.dev
+- https://spirit-in-physics-api.04-feasts-minded.workers.dev/api/health
 
 ### 11. サービス一覧
 - API Worker: `apps/api-worker`

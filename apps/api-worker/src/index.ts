@@ -11,10 +11,30 @@ import type {
   Database,
   NewArtifactRow,
   NewParticipantRow,
+  NewUserRow,
+  NewWebauthnCredentialRow,
   ParticipantPatch,
   ParticipantRow,
   SessionRow,
+  UserRow,
 } from './db/schema';
+import {
+  SESSION_TTL_MS,
+  buildClearSessionCookie,
+  buildSessionCookie,
+  createSession,
+  destroySession,
+  resolveSessionUser,
+  signSession,
+} from './auth/session';
+import {
+  consumeChallenge,
+  generateAuthenticationChallenge,
+  generateRegistrationChallenge,
+  relyingPartyForOrigin,
+  verifyAuthentication,
+  verifyRegistration,
+} from './auth/webauthn';
 
 type R2Bucket = {
   put: (
@@ -37,6 +57,7 @@ type Bindings = {
   API_MODE?: string;
   DB?: D1Database;
   ARTIFACTS?: R2Bucket;
+  SESSION_SECRET?: string;
 };
 
 type TimelinePoint = {
@@ -57,7 +78,11 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '/api/*',
   cors({
-    origin: '*',
+    // Echo the request origin so credentialed requests (cookies) are accepted.
+    // For non-credentialed callers, '*' still works because the browser doesn't
+    // require an exact match when Access-Control-Allow-Credentials is absent.
+    origin: (origin) => origin ?? '*',
+    credentials: true,
     allowHeaders: ['Content-Type'],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
   }),
@@ -83,6 +108,29 @@ function requireBucket(c: { env: Bindings }): R2Bucket {
 
 function getRequestOrigin(url: string): string {
   return new URL(url).origin;
+}
+
+function requireSessionSecret(c: { env: Bindings }): string {
+  const secret = c.env.SESSION_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error('SESSION_SECRET is not configured (use `wrangler secret put SESSION_SECRET`).');
+  }
+  return secret;
+}
+
+function isHttps(url: string): boolean {
+  return new URL(url).protocol === 'https:';
+}
+
+function userToJson(user: UserRow) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+    role: user.role,
+    createdAt: user.created_at_ms,
+    updatedAt: user.updated_at_ms,
+  };
 }
 
 function mapParticipant(row: ParticipantRow) {
@@ -366,11 +414,193 @@ app.get('/api/capabilities', (c) => {
   return c.json({
     ok: true,
     runtime: 'cloudflare-worker',
-    available: ['health', 'capabilities', 'participants', 'stimulus-words', 'assessment-events', 'assessment-graph', 'sessions', 'storage', 'timeline', 'timeline-graph'],
+    available: ['health', 'capabilities', 'auth', 'participants', 'stimulus-words', 'assessment-events', 'assessment-graph', 'sessions', 'storage', 'timeline', 'timeline-graph'],
     pending: ['preferences', 'imports'],
     mode: c.env.API_MODE ?? 'worker-partial',
   });
 });
+
+// ---------- WebAuthn auth ----------
+
+app.post('/api/auth/register/options', async (c) => {
+  const body = await c.req.json<{ email?: string; displayName?: string }>();
+  const email = (body.email ?? '').trim().toLowerCase();
+  const displayName = (body.displayName ?? '').trim();
+  if (!email || !displayName) {
+    return c.json({ message: 'email and displayName are required' }, 400);
+  }
+  const db = getDb(c);
+  let user = await db.selectFrom('users').selectAll().where('email', '=', email).executeTakeFirst();
+  if (!user) {
+    const now = Date.now();
+    // First user becomes a researcher; subsequent users are participants by default.
+    const existingCount = (await db
+      .selectFrom('users')
+      .select(({ fn }) => fn.countAll<number>().as('n'))
+      .executeTakeFirst())?.n ?? 0;
+    const role = Number(existingCount) === 0 ? 'researcher' : 'participant';
+    const newUser: NewUserRow = {
+      id: crypto.randomUUID(),
+      email,
+      display_name: displayName,
+      role,
+      created_at_ms: now,
+      updated_at_ms: now,
+    };
+    await db.insertInto('users').values(newUser).execute();
+    user = (await db.selectFrom('users').selectAll().where('id', '=', newUser.id).executeTakeFirst())!;
+  }
+  const existing = await db
+    .selectFrom('webauthn_credentials')
+    .select('id')
+    .where('user_id', '=', user.id)
+    .execute();
+  const rp = relyingPartyForOrigin(c.req.header('origin') ?? getRequestOrigin(c.req.url));
+  const options = await generateRegistrationChallenge(
+    db,
+    rp,
+    { id: user.id, email: user.email, displayName: user.display_name ?? user.email },
+    existing.map((row) => row.id),
+  );
+  return c.json({ options });
+});
+
+app.post('/api/auth/register/verify', async (c) => {
+  const body = await c.req.json<{ email?: string; response?: unknown; nickname?: string }>();
+  const email = (body.email ?? '').trim().toLowerCase();
+  if (!email || !body.response) {
+    return c.json({ message: 'email and response are required' }, 400);
+  }
+  const db = getDb(c);
+  const user = await db.selectFrom('users').selectAll().where('email', '=', email).executeTakeFirst();
+  if (!user) {
+    return c.json({ message: 'user not found, request registration options first' }, 404);
+  }
+  const challenge = (body.response as { response?: { clientDataJSON?: string } } | undefined)?.response?.clientDataJSON
+    ? extractChallenge((body.response as { response: { clientDataJSON: string } }).response.clientDataJSON)
+    : null;
+  if (!challenge) return c.json({ message: 'cannot extract challenge from response' }, 400);
+  const consumed = await consumeChallenge(db, challenge, 'registration');
+  if (!consumed || consumed.userId !== user.id) {
+    return c.json({ message: 'challenge invalid or expired' }, 400);
+  }
+  const rp = relyingPartyForOrigin(c.req.header('origin') ?? getRequestOrigin(c.req.url));
+  let verified;
+  try {
+    verified = await verifyRegistration(rp, challenge, body.response);
+  } catch (e) {
+    return c.json({ message: `registration verification failed: ${(e as Error).message}` }, 400);
+  }
+  const now = Date.now();
+  const credRow: NewWebauthnCredentialRow = {
+    id: verified.credentialId,
+    user_id: user.id,
+    public_key: verified.publicKey,
+    counter: verified.counter,
+    transports: JSON.stringify(verified.transports),
+    device_type: verified.deviceType,
+    backed_up: verified.backedUp ? 1 : 0,
+    nickname: body.nickname ?? null,
+    created_at_ms: now,
+    last_used_at_ms: now,
+  };
+  await db.insertInto('webauthn_credentials').values(credRow).execute();
+  const { sessionId } = await createSession(db, user.id, c.req.header('user-agent') ?? null);
+  const signed = await signSession(sessionId, requireSessionSecret(c));
+  c.header(
+    'Set-Cookie',
+    buildSessionCookie(signed, isHttps(c.req.url), Math.floor(SESSION_TTL_MS / 1000)),
+  );
+  return c.json({ user: userToJson(user) });
+});
+
+app.post('/api/auth/login/options', async (c) => {
+  const body = await c.req.json<{ email?: string }>().catch(() => ({} as { email?: string }));
+  const email = (body.email ?? '').trim().toLowerCase();
+  const db = getDb(c);
+  let allowIds: string[] = [];
+  if (email) {
+    const user = await db.selectFrom('users').selectAll().where('email', '=', email).executeTakeFirst();
+    if (user) {
+      const creds = await db
+        .selectFrom('webauthn_credentials')
+        .select('id')
+        .where('user_id', '=', user.id)
+        .execute();
+      allowIds = creds.map((row) => row.id);
+    }
+  }
+  const rp = relyingPartyForOrigin(c.req.header('origin') ?? getRequestOrigin(c.req.url));
+  const options = await generateAuthenticationChallenge(db, rp, allowIds);
+  return c.json({ options });
+});
+
+app.post('/api/auth/login/verify', async (c) => {
+  const body = await c.req.json<{ response?: { id?: string; response?: { clientDataJSON?: string } } }>();
+  if (!body.response || !body.response.id || !body.response.response?.clientDataJSON) {
+    return c.json({ message: 'response is required' }, 400);
+  }
+  const challenge = extractChallenge(body.response.response.clientDataJSON);
+  if (!challenge) return c.json({ message: 'cannot extract challenge' }, 400);
+  const db = getDb(c);
+  const consumed = await consumeChallenge(db, challenge, 'authentication');
+  if (!consumed) return c.json({ message: 'challenge invalid or expired' }, 400);
+  const credential = await db
+    .selectFrom('webauthn_credentials')
+    .selectAll()
+    .where('id', '=', body.response.id)
+    .executeTakeFirst();
+  if (!credential) return c.json({ message: 'unknown credential' }, 404);
+  const rp = relyingPartyForOrigin(c.req.header('origin') ?? getRequestOrigin(c.req.url));
+  let result;
+  try {
+    result = await verifyAuthentication(rp, challenge, body.response, credential);
+  } catch (e) {
+    return c.json({ message: `authentication verification failed: ${(e as Error).message}` }, 400);
+  }
+  const now = Date.now();
+  await db
+    .updateTable('webauthn_credentials')
+    .set({ counter: result.newCounter, last_used_at_ms: now })
+    .where('id', '=', credential.id)
+    .execute();
+  const user = await db
+    .selectFrom('users')
+    .selectAll()
+    .where('id', '=', credential.user_id)
+    .executeTakeFirst();
+  if (!user) return c.json({ message: 'user not found' }, 404);
+  const { sessionId } = await createSession(db, user.id, c.req.header('user-agent') ?? null);
+  const signed = await signSession(sessionId, requireSessionSecret(c));
+  c.header(
+    'Set-Cookie',
+    buildSessionCookie(signed, isHttps(c.req.url), Math.floor(SESSION_TTL_MS / 1000)),
+  );
+  return c.json({ user: userToJson(user) });
+});
+
+app.post('/api/auth/logout', async (c) => {
+  await destroySession(getDb(c), c.req.header('cookie'), requireSessionSecret(c));
+  c.header('Set-Cookie', buildClearSessionCookie(isHttps(c.req.url)));
+  return c.json({ ok: true });
+});
+
+app.get('/api/auth/me', async (c) => {
+  const user = await resolveSessionUser(getDb(c), c.req.header('cookie'), requireSessionSecret(c));
+  return c.json({ user: user ? userToJson(user) : null });
+});
+
+function extractChallenge(clientDataJSONBase64: string): string | null {
+  try {
+    const std = clientDataJSONBase64.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = std + '='.repeat((4 - (std.length % 4)) % 4);
+    const json = atob(padded);
+    const data = JSON.parse(json) as { challenge?: string };
+    return data.challenge ?? null;
+  } catch {
+    return null;
+  }
+}
 
 app.get('/api/participants', async (c) => {
   const db = getDb(c);

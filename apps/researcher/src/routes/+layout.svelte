@@ -1,12 +1,19 @@
 <script lang="ts">
-  import { SignedIn, SignedOut, UserButton, SignInButton, ClerkProvider } from "svelte-clerk";
+  import { onMount } from "svelte";
+  import { auth } from "$lib/auth/store.svelte";
+  import SignInButton from "$lib/components/auth/SignInButton.svelte";
+  import SignUpButton from "$lib/components/auth/SignUpButton.svelte";
+  import UserMenu from "$lib/components/auth/UserMenu.svelte";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import { page } from "$app/state";
-  import { runtimeConfig } from "$lib/env.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import "../app.css";
 
   let { children } = $props();
+
+  onMount(() => {
+    auth.init();
+  });
 
   let activeTab = $derived.by(() => {
     const path = page.url.pathname;
@@ -17,21 +24,30 @@
   });
 </script>
 
-{#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-  <ClerkProvider publishableKey={runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}>
-    {@render content()}
-  </ClerkProvider>
-{:else}
-  {@render content()}
-{/if}
-
-{#snippet content()}
-  <div class="researcher-container">
-    {#if !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
+<div class="researcher-container">
+  {#if auth.status !== 'ready'}
+    <div class="auth-required">
+      <div class="auth-card">
+        <h1>Loading...</h1>
+      </div>
+    </div>
+  {:else if !auth.isSignedIn}
+    <div class="auth-required">
+      <div class="auth-card">
+        <h1>{m.auth_required_title()}</h1>
+        <p>{m.auth_required_desc()}</p>
+        <div class="auth-actions">
+          <SignInButton class="btn-signin" label={m.signin()} />
+          <SignUpButton class="btn-signin" label="Create passkey" />
+        </div>
+      </div>
+    </div>
+  {:else}
+    <ResearcherGuard>
       <div class="dashboard-layout">
         <aside class="sidebar">
           <div class="sidebar-header">
-            <span class="brand">Admin Dashboard (No Auth Mode)</span>
+            <span class="brand">Researcher Dashboard</span>
           </div>
           <nav class="sidebar-nav">
             <a
@@ -63,125 +79,48 @@
               <span class="icon">⚙️</span> {m.settings()}
             </a>
           </nav>
+          <div class="sidebar-footer">
+            <UserMenu showRole />
+            <span class="user-name">{m.admin()}</span>
+          </div>
         </aside>
 
         <main class="main-content">
           <header class="content-header">
-            <h2 class="text-xl font-bold text-gray-800">
-              {#if activeTab === "overview"}{m.overview()}
-              {:else if activeTab === "participants"}{m.participants_list()}
-              {:else if activeTab === "sessions"}{m.sessions_history()}
-              {:else if activeTab === "settings"}{m.settings()}
-              {/if}
-            </h2>
+            <div class="flex items-center gap-4">
+              <h2 class="text-xl font-bold text-gray-800">
+                {#if activeTab === "overview"}{m.overview()}
+                {:else if activeTab === "participants"}{m.participants_list()}
+                {:else if activeTab === "sessions"}{m.sessions_history()}
+                {:else if activeTab === "settings"}{m.settings()}
+                {/if}
+              </h2>
+            </div>
             <div class="header-actions">
               <button class="btn-refresh" onclick={() => window.location.reload()} aria-label={m.update()}>{m.update()}</button>
             </div>
           </header>
 
-          <div class="content-body" role="region" aria-label="Dashboard Content">
+          <div class="content-body">
             {@render children()}
           </div>
         </main>
       </div>
-    {:else}
-      <SignedOut>
+
+      {#snippet fallback()}
         <div class="auth-required">
           <div class="auth-card">
-            <h1>{m.auth_required_title()}</h1>
-            <p>{m.auth_required_desc()}</p>
-            <div class="auth-actions">
-              <SignInButton mode="modal">
-                <button class="btn-signin">
-                  {m.signin()}
-                </button>
-              </SignInButton>
+            <h1>Access Denied</h1>
+            <p>研究者権限 (researcher role) が必要です。管理者にお問い合わせください。</p>
+            <div class="auth-placeholder">
+              <p>現在のユーザーにはこのページを表示する権限がありません。</p>
             </div>
           </div>
         </div>
-      </SignedOut>
-
-      <SignedIn>
-        <ResearcherGuard>
-          <div class="dashboard-layout">
-            <aside class="sidebar">
-              <div class="sidebar-header">
-                <span class="brand">Researcher Dashboard</span>
-              </div>
-              <nav class="sidebar-nav">
-                <a
-                  href="/"
-                  class="nav-item"
-                  class:active={activeTab === "overview"}
-                >
-                  <span class="icon">📊</span> {m.overview()}
-                </a>
-                <a
-                  href="/participants/"
-                  class="nav-item"
-                  class:active={activeTab === "participants"}
-                >
-                  <span class="icon">👥</span> {m.participants_list()}
-                </a>
-                <a
-                  href="/sessions/"
-                  class="nav-item"
-                  class:active={activeTab === "sessions"}
-                >
-                  <span class="icon">🕒</span> {m.sessions_history()}
-                </a>
-                <a
-                  href="/settings/"
-                  class="nav-item"
-                  class:active={activeTab === "settings"}
-                >
-                  <span class="icon">⚙️</span> {m.settings()}
-                </a>
-              </nav>
-              <div class="sidebar-footer">
-                <UserButton />
-                <span class="user-name">{m.admin()}</span>
-              </div>
-            </aside>
-
-            <main class="main-content">
-              <header class="content-header">
-                <div class="flex items-center gap-4">
-                  <h2 class="text-xl font-bold text-gray-800">
-                    {#if activeTab === "overview"}{m.overview()}
-                    {:else if activeTab === "participants"}{m.participants_list()}
-                    {:else if activeTab === "sessions"}{m.sessions_history()}
-                    {:else if activeTab === "settings"}{m.settings()}
-                    {/if}
-                  </h2>
-                </div>
-                <div class="header-actions">
-                  <button class="btn-refresh" onclick={() => window.location.reload()} aria-label={m.update()}>{m.update()}</button>
-                </div>
-              </header>
-
-              <div class="content-body">
-                {@render children()}
-              </div>
-            </main>
-          </div>
-
-          {#snippet fallback()}
-            <div class="auth-required">
-              <div class="auth-card">
-                <h1>Access Denied</h1>
-                <p>研究者権限 (researcher role) が必要です。管理者にお問い合わせください。</p>
-                <div class="auth-placeholder">
-                  <p>現在のユーザーにはこのページを表示する権限がありません。</p>
-                </div>
-              </div>
-            </div>
-          {/snippet}
-        </ResearcherGuard>
-      </SignedIn>
-    {/if}
-  </div>
-{/snippet}
+      {/snippet}
+    </ResearcherGuard>
+  {/if}
+</div>
 
 <style>
   .researcher-container {
@@ -370,6 +309,10 @@
 
   .auth-actions {
     margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .btn-signin {

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { useClerkContext } from "svelte-clerk";
-  import { runtimeConfig } from "$lib/env.svelte";
+  import { auth } from "$lib/auth/store.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import ConsentForm from "$lib/components/ConsentForm.svelte";
@@ -10,8 +9,7 @@
   import { hasAccess } from "$lib/subscription";
   import { resolveRoute } from "$lib/routing";
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
-  const user = $derived(clerk?.user);
+  const user = $derived(auth.user);
   const mode = $derived((page.url.searchParams.get("mode") as any) || "full");
 
   onMount(() => {

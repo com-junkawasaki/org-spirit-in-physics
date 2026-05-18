@@ -1,50 +1,29 @@
-// Use a loose type for User to avoid dependency issues with @clerk/types
-export interface ClerkUser {
-  id: string;
-  publicMetadata: Record<string, any>;
-  [key: string]: any;
-}
+// Subscription helpers. WebAuthn users do not carry plan metadata directly;
+// plan info will be persisted on the D1 `users` table in a future migration.
+// For now treat every authenticated user as `free` to keep existing call
+// sites compiling.
 
 export type Plan = 'free' | 'premium';
 
 export interface SubscriptionInfo {
   plan: Plan;
   status: 'active' | 'past_due' | 'canceled' | 'none';
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
 }
 
-/**
- * Gets subscription information from Clerk user metadata
- */
-export function getSubscriptionInfo(user: ClerkUser | null | undefined): SubscriptionInfo {
-  if (!user) {
-    return { plan: 'free', status: 'none' };
-  }
-
-  const metadata = user.publicMetadata as any;
-  
-  return {
-    plan: (metadata.plan as Plan) || 'free',
-    status: (metadata.subscriptionStatus as any) || 'none',
-    stripeCustomerId: metadata.stripeCustomerId,
-    stripeSubscriptionId: metadata.stripeSubscriptionId,
-  };
+export interface AppUserLike {
+  id: string;
+  role?: string;
 }
 
-/**
- * Checks if the user has access to a specific mode
- */
-export function hasAccess(user: ClerkUser | null | undefined, mode: 'quick' | 'full'): boolean {
+export function getSubscriptionInfo(user: AppUserLike | null | undefined): SubscriptionInfo {
+  if (!user) return { plan: 'free', status: 'none' };
+  // Researchers get premium access for free.
+  if (user.role === 'researcher') return { plan: 'premium', status: 'active' };
+  return { plan: 'free', status: 'none' };
+}
+
+export function hasAccess(user: AppUserLike | null | undefined, mode: 'quick' | 'full'): boolean {
+  if (mode === 'quick') return true;
   const info = getSubscriptionInfo(user);
-  
-  if (mode === 'quick') return true; // Always free
-  
-  if (mode === 'full') {
-    // Requires premium plan
-    return info.plan === 'premium' && info.status === 'active';
-  }
-  
-  return false;
+  return info.plan === 'premium' && info.status === 'active';
 }
-

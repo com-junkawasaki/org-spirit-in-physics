@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { SignedIn, SignedOut, useClerkContext } from "svelte-clerk";
+  import { auth } from "$lib/auth/store.svelte";
+  import SignInButton from "$lib/components/auth/SignInButton.svelte";
+  import SignUpButton from "$lib/components/auth/SignUpButton.svelte";
   import TimelineVisualization from "$lib/components/researcher/TimelineVisualization.svelte";
   import { participantClient } from "$lib/connect";
   import { runtimeConfig } from "$lib/env.svelte";
@@ -12,26 +14,26 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
+  onMount(() => {
+    auth.init();
+  });
 
-  // Watch for user changes and fetch participant
   $effect(() => {
     if (!runtimeConfig.API_ENABLED) {
       loading = false;
       error = "Cloudflare Worker API is not enabled for personal analysis yet.";
       return;
     }
-    const user = clerk?.user;
-    if (user) {
-      const email = user.primaryEmailAddress?.emailAddress;
+    if (auth.status !== 'ready') return;
+    if (auth.user) {
+      const email = auth.user.email;
       if (email) {
         fetchParticipant(email);
       } else {
         loading = false;
         error = "メールアドレスが見つかりません";
       }
-    } else if (!runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY) {
-      // No auth mode - skip participant lookup
+    } else {
       loading = false;
     }
   });
@@ -64,71 +66,63 @@
 </svelte:head>
 
 <div class="analyzer-page">
-  {#if !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-    <!-- No Auth Mode -->
-    <div class="no-auth-state">
+  {#if auth.status !== 'ready'}
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>{m.loading_data()}</p>
+    </div>
+  {:else if !auth.isSignedIn}
+    <div class="auth-required-state">
       <div class="auth-card">
-        <span class="icon">🔬</span>
-        <h2>Analysis View</h2>
-        <p>認証が無効のため、個人分析を表示できません。</p>
-        <p class="hint">ログイン機能を有効にしてください。</p>
+        <span class="icon">🔐</span>
+        <h2>ログインが必要です</h2>
+        <p>あなたの分析結果を表示するには、ログインしてください。</p>
+        <div class="auth-actions">
+          <SignInButton class="login-btn" label="Sign in with passkey" />
+          <SignUpButton class="login-btn" label="Create passkey" />
+        </div>
+        <div class="experiment-link-container">
+          <p class="new-user-text">まだ実験に参加していませんか？</p>
+          <a href="/experiment" class="experiment-link">🧪 実験を始める</a>
+        </div>
       </div>
     </div>
-  {:else}
-    <SignedOut>
-      <div class="auth-required-state">
-        <div class="auth-card">
-          <span class="icon">🔐</span>
-          <h2>ログインが必要です</h2>
-          <p>あなたの分析結果を表示するには、ログインしてください。</p>
-          <a href="/settings" class="login-btn">ログイン / サインアップ</a>
-          <div class="experiment-link-container">
-            <p class="new-user-text">まだ実験に参加していませんか？</p>
-            <a href="/experiment" class="experiment-link">🧪 実験を始める</a>
-          </div>
-        </div>
+  {:else if loading}
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>{m.loading_data()}</p>
+    </div>
+  {:else if error}
+    <div class="error-state">
+      <div class="error-card">
+        <span class="icon">⚠️</span>
+        <h3>データを取得できませんでした</h3>
+        <p>{error}</p>
+        <a href="/participant/consent" class="action-btn">実験に参加する</a>
       </div>
-    </SignedOut>
-
-    <SignedIn>
-      {#if loading}
-        <div class="loading-state">
-          <div class="spinner"></div>
-          <p>{m.loading_data()}</p>
-        </div>
-      {:else if error}
-        <div class="error-state">
-          <div class="error-card">
-            <span class="icon">⚠️</span>
-            <h3>データを取得できませんでした</h3>
-            <p>{error}</p>
-            <a href="/participant/consent" class="action-btn">実験に参加する</a>
-          </div>
-        </div>
-      {:else if participantId}
-        <div class="analysis-container">
-          <header class="analysis-header">
-            <div class="header-content">
-              <div class="flex items-center gap-3">
-                <div class="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
-                <div>
-                  <h1 class="text-2xl font-black tracking-tight">Your Analysis</h1>
-                  <p class="text-sm text-gray-500 font-mono">{participantId.slice(0, 8)}...</p>
-                </div>
-              </div>
+    </div>
+  {:else if participantId}
+    <div class="analysis-container">
+      <header class="analysis-header">
+        <div class="header-content">
+          <div class="flex items-center gap-3">
+            <div class="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+            <div>
+              <h1 class="text-2xl font-black tracking-tight">Your Analysis</h1>
+              <p class="text-sm text-gray-500 font-mono">{participantId.slice(0, 8)}...</p>
             </div>
-          </header>
-
-          <div class="visualization-wrapper">
-            <TimelineVisualization
-              {participantId}
-              width={runtimeConfig.IS_CAPACITOR ? 1000 : 1200}
-              height={runtimeConfig.IS_CAPACITOR ? 600 : 750}
-            />
           </div>
         </div>
-      {/if}
-    </SignedIn>
+      </header>
+
+      <div class="visualization-wrapper">
+        <TimelineVisualization
+          {participantId}
+          width={runtimeConfig.IS_CAPACITOR ? 1000 : 1200}
+          height={runtimeConfig.IS_CAPACITOR ? 600 : 750}
+        />
+      </div>
+    </div>
   {/if}
 </div>
 

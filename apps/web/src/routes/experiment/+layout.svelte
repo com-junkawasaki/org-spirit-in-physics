@@ -1,16 +1,13 @@
 <script lang="ts">
-  import { useClerkContext } from "svelte-clerk";
-  import { runtimeConfig } from "$lib/env.svelte";
+  import { auth } from "$lib/auth/store.svelte";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import "../../app.css";
 
   let { children } = $props();
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
-
   $effect(() => {
-    if (clerk?.user) {
-      kawasakiStore.syncWithClerk(clerk.user);
+    if (auth.user) {
+      kawasakiStore.syncWithAuthUser(auth.user);
     }
   });
 </script>

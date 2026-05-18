@@ -1,21 +1,25 @@
 # Cloudflare DNS Cutover
 
-Date: 2026-04-20
+Executed: 2026-05-17 (drafted 2026-04-20)
 
-Move `spirit-in-physics.com` from Google Cloud DNS to Cloudflare, and bind the
-apex / subdomains to the Cloudflare Workers that were introduced in the
-Cloudflare-native refactor ([docs/cloudflare-native-architecture.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-native-architecture.md)).
+Move authoritative DNS for `spirit-in-physics.com` from Google Cloud DNS to
+Cloudflare, and bind the apex / subdomains to the Cloudflare Workers introduced
+in the Cloudflare-native refactor
+([docs/cloudflare-native-architecture.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-native-architecture.md)).
+
+Registrar (Squarespace Domains II LLC, formerly Google Domains) stays the same;
+only the nameservers are switched.
 
 ## Target topology
 
-| Hostname                              | Worker                        | Route pattern                                   |
-| ------------------------------------- | ----------------------------- | ----------------------------------------------- |
-| `spirit-in-physics.com`               | `spirit-in-physics-web`       | custom domain                                   |
-| `www.spirit-in-physics.com`           | `spirit-in-physics-web`       | custom domain                                   |
-| `researcher.spirit-in-physics.com`    | `spirit-in-physics-researcher`| custom domain                                   |
-| `spirit-in-physics.com/api/*`         | `spirit-in-physics-api`       | zone route (`zone_name: spirit-in-physics.com`) |
-| `www.spirit-in-physics.com/api/*`     | `spirit-in-physics-api`       | zone route                                      |
-| `researcher.spirit-in-physics.com/api/*` | `spirit-in-physics-api`    | zone route                                      |
+| Hostname                                 | Worker                         | Route pattern                                   |
+| ---------------------------------------- | ------------------------------ | ----------------------------------------------- |
+| `spirit-in-physics.com`                  | `spirit-in-physics-web`        | custom domain                                   |
+| `www.spirit-in-physics.com`              | `spirit-in-physics-web`        | custom domain                                   |
+| `researcher.spirit-in-physics.com`       | `spirit-in-physics-researcher` | custom domain                                   |
+| `spirit-in-physics.com/api/*`            | `spirit-in-physics-api`        | zone route (`zone_name: spirit-in-physics.com`) |
+| `www.spirit-in-physics.com/api/*`        | `spirit-in-physics-api`        | zone route                                      |
+| `researcher.spirit-in-physics.com/api/*` | `spirit-in-physics-api`        | zone route                                      |
 
 Routes are declared in:
 
@@ -23,139 +27,187 @@ Routes are declared in:
 - `apps/researcher/wrangler.jsonc`
 - `apps/api-worker/wrangler.jsonc`
 
-## Preconditions
+Cloudflare account: `ai-gftd-cloud` (`4da88288dc30d9ee257f319d3c33ecf0`).
+Zone ID: `5758b297143072debc3f9939c46c080b`.
 
-1. Cloudflare account has access to the target zone (create a new zone if
-   needed — see step 1).
-2. GCP project `com-junkawasaki-sip` billing has been disabled, so current
-   records must be captured via the Google Cloud DNS console (UI) rather than
-   `gcloud`.
-3. All three Workers have been deployed at least once so Cloudflare knows the
-   scripts exist.
+## Starting state (May 2026)
 
-```
-pnpm --filter spirit-in-physics-api deploy
-pnpm --filter spirit-in-physics-web deploy
-pnpm --filter spirit-in-physics-researcher deploy
-```
+- Registrar: Squarespace Domains II LLC (`domains2.squarespace.com`).
+- Authoritative NS at registry: `ns-cloud-b{1,2,3,4}.googledomains.com`.
+- GCP project `com-junkawasaki-sip` billing **disabled** — Cloud DNS is no
+  longer serving the zone. `dig` against the listed NS returns SERVFAIL/empty,
+  and `gcloud dns` operations are blocked. There are no records to preserve
+  and no rollback to Cloud DNS is possible: when billing was turned off, the
+  managed zone effectively stopped existing.
+- Email: not in use on the domain (no MX/SPF/DMARC to preserve).
 
-## Step 1 — Capture the existing Google Cloud DNS zone
+## Step 1 — Add the zone to Cloudflare
 
-1. Open https://console.cloud.google.com/net-services/dns/zones in the
-   `com-junkawasaki-sip` project.
-2. Open the `spirit-in-physics-com` (or equivalent) zone.
-3. Export the zone file: *Export record sets* → download as BIND.
-4. Keep the export as a rollback artifact. Do **not** delete the zone yet.
+Done via the Cloudflare Dashboard with an authenticated user on the
+`ai-gftd-cloud` account. An API token alone cannot create a zone without the
+`Account → Zone:Edit` permission at account scope; for a one-off cutover the
+dashboard path is faster.
 
-Typical records that must be preserved:
+1. Dashboard → *Websites* → *Add a site* → `spirit-in-physics.com`.
+2. Plan: **Free**.
+3. Auto-scan finds nothing (Cloud DNS already inactive); click through.
+4. Cloudflare assigns two nameservers, both anycasted globally:
 
-- MX / TXT for Google Workspace (if any)
-- TXT for SPF / DKIM / DMARC
-- TXT for domain verification (Apple, etc.)
-- CAA
-- Any third-party CNAMEs (auth providers, etc.)
+   ```
+   everton.ns.cloudflare.com
+   vivienne.ns.cloudflare.com
+   ```
 
-## Step 2 — Add the zone to Cloudflare
+   (Your assigned pair will differ for new zones.)
 
-1. Cloudflare Dashboard → *Websites* → *Add a site* → `spirit-in-physics.com`.
-2. Choose a plan (Free is sufficient).
-3. Cloudflare will auto-scan DNS. Verify that the scan picked up the records
-   captured in step 1. Add anything missing manually.
-4. Note the two Cloudflare nameservers shown (e.g. `xxx.ns.cloudflare.com`).
+After this step the zone exists in Cloudflare in `pending` status. The public
+internet still routes queries to the (dead) Cloud DNS delegation.
 
-At this point the zone exists in Cloudflare but the public internet still uses
-Google Cloud DNS. Nothing is live yet.
+## Step 2 — Deploy Workers to bind routes and custom domains
 
-## Step 3 — Attach routes / custom domains to Workers
+A Cloudflare API token with at least:
 
-Because `wrangler.jsonc` already declares `routes` with `custom_domain: true`
-and zone routes, a redeploy of each Worker will:
+- `Account → Workers Scripts:Edit`
+- `Zone → Zone:Edit`
+- `Zone → DNS:Edit`
+- `Zone → Workers Routes:Edit`
 
-- create the necessary proxied DNS records inside the Cloudflare zone, and
-- provision the TLS certificates for the custom domains.
+scoped to "All zones from an account = ai-gftd-cloud" works. (You may also
+need `Account Settings:Read` depending on wrangler version.)
 
-```
-pnpm --filter spirit-in-physics-api deploy
-pnpm --filter spirit-in-physics-web deploy
-pnpm --filter spirit-in-physics-researcher deploy
+Build the SvelteKit apps if their `.svelte-kit/cloudflare` output is stale:
+
+```sh
+(cd apps/web && pnpm build)
+(cd apps/researcher && pnpm build)
 ```
 
-Verify in the Cloudflare Dashboard:
+Deploy each worker. `CLOUDFLARE_ACCOUNT_ID` is required because the token
+above does not have `User → User Details:Read`, so wrangler cannot enumerate
+accounts via `/memberships`:
 
-- Workers & Pages → each worker has the expected routes / custom domains.
-- DNS → apex, `www`, and `researcher` records are proxied (orange cloud) and
-  point to the Workers runtime.
+```sh
+export CLOUDFLARE_API_TOKEN=...          # token created above
+export CLOUDFLARE_ACCOUNT_ID=4da88288dc30d9ee257f319d3c33ecf0
 
-Because the Cloudflare zone is not yet authoritative, these records are not
-resolvable from the public internet — they only take effect after step 5.
-
-## Step 4 — Dry-run validation
-
-Validate the Cloudflare-served responses before cutover by hitting the zone's
-Cloudflare nameservers directly:
-
-```
-dig @<cf-ns>.ns.cloudflare.com spirit-in-physics.com +short
-dig @<cf-ns>.ns.cloudflare.com www.spirit-in-physics.com +short
-dig @<cf-ns>.ns.cloudflare.com researcher.spirit-in-physics.com +short
-
-curl --resolve spirit-in-physics.com:443:<cf-ip> https://spirit-in-physics.com/
-curl --resolve spirit-in-physics.com:443:<cf-ip> https://spirit-in-physics.com/api/health
+(cd apps/api-worker  && wrangler deploy)
+(cd apps/web         && wrangler deploy)
+(cd apps/researcher  && wrangler deploy)
 ```
 
-All three hostnames should serve over HTTPS via Cloudflare before touching the
-registrar.
+Each deploy creates the necessary proxied AAAA records (Workers' `100::`
+placeholder) and registers the custom-domain or zone-route bindings.
+Universal SSL cert provisioning is queued but waits for DCV, which can only
+succeed once Cloudflare is authoritative (Step 4).
 
-## Step 5 — Switch nameservers at the registrar
+Verify via API:
 
-1. Open the domain registrar (Google Domains / Squarespace Domains / etc.).
-2. Replace the current nameservers with the two Cloudflare nameservers from
-   step 2.
-3. Lower the registrar-side TTL first if available (most registrars do not
-   expose this for NS).
-4. Propagation usually completes in minutes but can take up to 48h.
-
-## Step 6 — Post-cutover verification
-
-```
-dig spirit-in-physics.com NS +short          # should list Cloudflare NS
-dig spirit-in-physics.com +short              # should resolve through Cloudflare
-curl -I https://spirit-in-physics.com/
-curl -I https://www.spirit-in-physics.com/
-curl -I https://researcher.spirit-in-physics.com/
-curl -I https://spirit-in-physics.com/api/health
+```sh
+ZONE=5758b297143072debc3f9939c46c080b
+ACC=4da88288dc30d9ee257f319d3c33ecf0
+curl -sH "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records?per_page=50"
+curl -sH "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$ACC/workers/domains?zone_id=$ZONE"
+curl -sH "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE/workers/routes"
 ```
 
-Also check:
+Expected: 3 AAAA records (apex, `www`, `researcher` → `100::`, proxied), 3
+worker custom domains, 3 zone routes for `/api/*`.
 
-- Email flow (send/receive test) — MX/SPF/DKIM/DMARC preserved
-- iOS app → API calls succeed
+## Step 3 — Dry-run validation
 
-## Step 7 — Decommission Google Cloud DNS
+Query the Cloudflare nameservers directly:
 
-Only after at least 72h of stable Cloudflare-served traffic:
+```sh
+for h in spirit-in-physics.com www.spirit-in-physics.com researcher.spirit-in-physics.com; do
+  dig @everton.ns.cloudflare.com $h +short
+done
+```
 
-1. In Google Cloud DNS, delete the `spirit-in-physics-com` managed zone.
-2. Remove any IAM bindings / service accounts that were specific to DNS
-   management.
-3. Archive related Terraform / manifest references (none remain in this repo —
-   the old k8s gateway assets are already under
-   [`archive/kubernetes`](/Users/junkawasaki/github/spirit-in-physics/archive/kubernetes)).
+Each should return `100::` (the Workers anycast placeholder; the actual edge
+IPs are returned only via the public resolver path once the zone is
+authoritative).
+
+HTTPS via `--resolve` is **not** useful at this stage: edge TLS handshakes
+fail until DCV completes, and DCV only completes after Step 4.
+
+## Step 4 — Switch nameservers at the registrar (Squarespace)
+
+1. https://account.squarespace.com/domains/managed/spirit-in-physics.com/dns/dns-settings
+2. *Nameservers* section → remove all four `ns-cloud-b{1-4}.googledomains.com`
+   entries → add the two Cloudflare nameservers from Step 1 → **Save**.
+3. Squarespace warns "this is unlikely to cause downtime" — accurate here
+   because the previous Cloud DNS delegation was already not serving.
+4. Registry update is usually visible at `whois` within a few minutes;
+   recursive resolver caches refresh within their TTL (typically 1h, occasionally
+   up to 48h for stragglers).
+
+## Step 5 — Post-cutover verification
+
+```sh
+dig @1.1.1.1 spirit-in-physics.com NS +short   # should list Cloudflare NS
+dig @8.8.8.8 spirit-in-physics.com NS +short
+
+for h in spirit-in-physics.com www.spirit-in-physics.com researcher.spirit-in-physics.com; do
+  echo "== $h =="
+  curl -sI "https://$h/" | head -1
+done
+curl -sI https://spirit-in-physics.com/api/health | head -1
+```
+
+Cloudflare zone status flips to `active` automatically once it sees the NS
+delegation, and Universal SSL DCV unblocks shortly after. Until both happen
+TLS handshakes can fail with `sslv3 alert handshake failure`; this is benign
+and resolves itself once the cert pack reaches `active`.
+
+Also check (if applicable):
+
+- Apple App Store Connect: any *Associated Domains* configured in
+  `apps/mobile/ios`.
+- Hume AI webhooks (if any) — verify destination host still resolves.
+- Email: not currently configured for this domain; if Google Workspace is
+  re-added later, port MX/SPF/DKIM/DMARC over to Cloudflare first.
+
+## Step 6 — Decommission
+
+GCP-side cleanup is mostly a no-op because the project's billing is already
+disabled. No further action is required unless billing is re-enabled, in
+which case delete the dormant managed zone explicitly to avoid surprise
+charges:
+
+```sh
+gcloud dns managed-zones delete spirit-in-physics-com \
+  --project com-junkawasaki-sip   # requires billing re-enabled first
+```
+
+The old k8s gateway assets that previously fronted this domain are already
+archived under
+[`archive/kubernetes`](/Users/junkawasaki/github/spirit-in-physics/archive/kubernetes).
 
 ## Rollback
 
-If Cloudflare-served traffic misbehaves:
+Rollback to Cloud DNS is **not available** in the current state because the
+GCP project's billing is disabled and the managed zone is no longer serving.
+If something is wrong after cutover, the practical options are:
 
-1. Revert nameservers at the registrar to the Google Cloud DNS nameservers.
-2. The GCP zone still exists (step 1 kept it), so resolution returns to the
-   previous behavior within the registrar TTL.
-
-Do not rely on rollback after step 7.
+1. Pause the Cloudflare zone (`zones/{id}/activation_check`-adjacent: use the
+   dashboard *Advanced Actions → Pause Cloudflare on Site*) to bypass
+   Cloudflare's edge while DNS keeps resolving directly to the origin. The
+   origin here *is* Cloudflare Workers, so pausing mostly only affects WAF /
+   caching / Bot Management — it does not restore Cloud DNS.
+2. Roll back individual Workers (`wrangler rollback`) if the regression is in
+   a deploy made during cutover.
+3. As a last resort, re-enable GCP billing and re-create the Cloud DNS zone
+   from scratch. Records that historically lived there are not preserved in
+   this repo and would need to be reconstructed; for the current
+   Workers-fronted topology there are no records to restore other than the
+   delegation itself.
 
 ## Known integrations to re-check
 
 - **Apple App Store Connect**: associated domains, if any, defined in
   `apps/mobile/ios`.
 - **Hume AI** webhooks (if any) — verify destination host still resolves.
-- **Email** (Google Workspace): MX / SPF / DKIM / DMARC / domain-verification
-  TXT.
+- **Email** — not in use today; revisit if reintroduced.

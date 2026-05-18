@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "svelte-clerk";
   import { runtimeConfig } from "$lib/env.svelte";
+  import { auth } from "$lib/auth/store.svelte";
+  import SignInButton from "$lib/components/auth/SignInButton.svelte";
+  import SignUpButton from "$lib/components/auth/SignUpButton.svelte";
+  import UserMenu from "$lib/components/auth/UserMenu.svelte";
+  import UserSync from "$lib/components/auth/UserSync.svelte";
   import { page } from "$app/state";
   import { browser } from "$app/environment";
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import UserSync from "$lib/components/auth/UserSync.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag, availableLanguageTags } from "$lib/paraglide/runtime.js";
   import { resolveRoute } from "$lib/routing";
@@ -14,26 +16,7 @@
   let { children } = $props();
 
   onMount(async () => {
-    console.log('[DEBUG] +layout.svelte: onMount started');
-    console.log('[DEBUG] Current route:', page.url.pathname);
-    
-    if (runtimeConfig.IS_CAPACITOR) {
-      const { App } = await import('@capacitor/app');
-      
-      App.addListener('appUrlOpen', (event: any) => {
-        const url = new URL(event.url);
-        const slug = url.hostname;
-        
-        console.log("[Mobile] Deep link received:", event.url);
-        
-        if (slug === 'clerk' || url.searchParams.has('__clerk_ticket')) {
-          const path = url.pathname + url.search;
-          goto(path);
-        }
-      });
-    }
-    
-    console.log('[DEBUG] +layout.svelte: onMount completed');
+    auth.init();
   });
 
   let isExperimentRoute = $derived(page.url.pathname.includes('/experiment'));
@@ -55,14 +38,8 @@
   });
 </script>
 
-{#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-  <ClerkProvider publishableKey={runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}>
-    <UserSync />
-    {@render layoutContent()}
-  </ClerkProvider>
-{:else}
-  {@render layoutContent()}
-{/if}
+<UserSync />
+{@render layoutContent()}
 
 {#snippet layoutContent()}
   <div class="app-shell">
@@ -74,17 +51,11 @@
         
         <div class="header-right">
           <div class="auth-group">
-            {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-              <SignedIn>
-                <UserButton userProfileMode="navigation" userProfileUrl={resolveRoute("/settings")} />
-              </SignedIn>
-              <SignedOut>
-                <a href={resolveRoute("/settings")} class="settings-link" aria-label="Settings">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                </a>
-              </SignedOut>
-            {:else}
-              <span class="no-auth-label">No Auth</span>
+            {#if auth.isSignedIn}
+              <UserMenu />
+            {:else if auth.status === 'ready'}
+              <SignInButton class="auth-link" label="Sign in" />
+              <SignUpButton class="auth-link auth-link-primary" label="Sign up" />
             {/if}
           </div>
         </div>
