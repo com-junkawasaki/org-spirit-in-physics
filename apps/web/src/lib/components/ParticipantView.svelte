@@ -1,26 +1,25 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { SignedIn, SignedOut, SignInButton, useClerkContext } from 'svelte-clerk';
-import { runtimeConfig } from "$lib/env.svelte";
-import ConsentForm from "./ConsentForm.svelte";
+  import { onMount } from "svelte";
+  import { auth } from "$lib/auth/store.svelte";
+  import SignInButton from "$lib/components/auth/SignInButton.svelte";
+  import SignUpButton from "$lib/components/auth/SignUpButton.svelte";
+  import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
   import { languageTag } from "$lib/paraglide/runtime.js";
   import * as m from "$lib/paraglide/messages.js";
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
 
   onMount(async () => {
-    // 参加者IDの初期化
     kawasakiStore.initializeParticipant();
     await kawasakiStore.loadStimulusWords();
+    auth.init();
   });
 
-  // ログイン済みの場合、既存の参加者情報をチェック
   $effect(() => {
-    if (clerk?.user && step === "landing") {
-      const email = clerk.user.primaryEmailAddress?.emailAddress;
+    if (auth.user && step === "landing") {
+      const email = auth.user.email;
       if (email) {
         kawasakiStore.checkExistingParticipant(email).then((exists) => {
           if (exists) {
@@ -88,14 +87,11 @@ import ConsentForm from "./ConsentForm.svelte";
       </h1>
       
       <div class="button-group">
-        {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button class="btn secondary">{m.signin()}</button>
-            </SignInButton>
-          </SignedOut>
+        {#if !auth.isSignedIn && auth.status === 'ready'}
+          <SignInButton class="btn secondary" label={m.signin()} />
+          <SignUpButton class="btn secondary" label="Sign up with passkey" />
         {/if}
-        
+
         <button class="btn primary large" onclick={startParticipantFlow}>
           {m.subject_view()}
         </button>

@@ -3,8 +3,7 @@
   import * as m from "$lib/paraglide/messages.js";
   import { ILLNESS_CODES, type IllnessCode } from "@spirit/consent";
   import { languageTag } from "$lib/paraglide/runtime.js";
-  import { SignedIn, SignedOut, useClerkContext } from 'svelte-clerk';
-  import { runtimeConfig } from "$lib/env.svelte";
+  import { auth } from "$lib/auth/store.svelte";
   import { fade, fly } from "svelte/transition";
 
   let { onConsent, participantId } = $props<{
@@ -47,8 +46,7 @@
         )
   );
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
-  const user = $derived(clerk?.user);
+  const user = $derived(auth.user);
 
   const isAllAgreed = $derived(
     Object.values(agreements).every(Boolean)
@@ -92,7 +90,7 @@
     event.preventDefault();
     if (isAllAgreed && isDemographicsComplete && isEmailProvided) {
       if (user) {
-        onConsent(participantId, user.primaryEmailAddress?.emailAddress || "", agreements, demographics);
+        onConsent(participantId, user.email || "", agreements, demographics);
       } else {
         onConsent(participantId, email, agreements, demographics);
       }
@@ -309,22 +307,16 @@
           </p>
 
           <div class="p-8 bg-gray-50 dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
-            {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-              <SignedIn>
-                <div class="flex items-center gap-6">
-                  <div class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-500/20">
-                    {user?.primaryEmailAddress?.emailAddress?.charAt(0) || 'U'}
-                  </div>
-                  <div class="flex-1">
-                    <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">{m.already_signed_in_as()}</p>
-                    <p class="text-lg font-black">{user?.primaryEmailAddress?.emailAddress}</p>
-                  </div>
+            {#if user}
+              <div class="flex items-center gap-6">
+                <div class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-500/20">
+                  {user.email.charAt(0) || 'U'}
                 </div>
-              </SignedIn>
-
-              <SignedOut>
-                {@render emailInput()}
-              </SignedOut>
+                <div class="flex-1">
+                  <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">{m.already_signed_in_as()}</p>
+                  <p class="text-lg font-black">{user.email}</p>
+                </div>
+              </div>
             {:else}
               {@render emailInput()}
             {/if}

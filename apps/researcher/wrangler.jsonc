@@ -1,6 +1,8 @@
 {
   "name": "spirit-in-physics-researcher",
+  "account_id": "4da88288dc30d9ee257f319d3c33ecf0",
   "compatibility_date": "2026-04-12",
+  "workers_dev": true,
   "assets": {
     "directory": ".svelte-kit/cloudflare"
   },

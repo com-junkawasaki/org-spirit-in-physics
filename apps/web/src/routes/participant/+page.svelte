@@ -1,19 +1,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SignedOut, SignInButton, useClerkContext } from 'svelte-clerk';
-  import { runtimeConfig } from "$lib/env.svelte";
+  import { auth } from "$lib/auth/store.svelte";
+  import SignInButton from "$lib/components/auth/SignInButton.svelte";
+  import SignUpButton from "$lib/components/auth/SignUpButton.svelte";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { hasAccess } from "$lib/subscription";
   import { resolveRoute } from "$lib/routing";
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
-  const user = $derived(clerk?.user);
+  const user = $derived(auth.user);
 
   onMount(async () => {
-    // 参加者IDの初期化
     kawasakiStore.initializeParticipant();
     await kawasakiStore.loadStimulusWords();
+    auth.init();
   });
 </script>
 
@@ -27,14 +27,11 @@
   </h1>
   
   <div class="button-group">
-    {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-      <SignedOut>
-        <SignInButton mode="modal">
-          <button class="btn secondary">{m.signin()}</button>
-        </SignInButton>
-      </SignedOut>
+    {#if !auth.isSignedIn && auth.status === 'ready'}
+      <SignInButton class="btn secondary" label={m.signin()} />
+      <SignUpButton class="btn secondary" label="Sign up with passkey" />
     {/if}
-    
+
     <div class="entry-grid">
       <a href={resolveRoute("/participant/consent?mode=quick")} class="entry-card quick">
         <div class="icon">⚡</div>

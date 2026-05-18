@@ -2,16 +2,14 @@
   import * as m from "$lib/paraglide/messages.js";
   import { page } from "$app/state";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
-  import { useClerkContext } from "svelte-clerk";
-  import { runtimeConfig } from "$lib/env.svelte";
+  import { auth } from "$lib/auth/store.svelte";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { resolveRoute } from "$lib/routing";
 
   let { children } = $props();
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
-  const user = $derived(clerk?.user);
+  const user = $derived(auth.user);
 
   const isLanding = $derived(page.url.pathname.replace(/\/$/, '') === '/participant');
   const isConsent = $derived(page.url.pathname.replace(/\/$/, '') === '/participant/consent');
@@ -20,12 +18,12 @@
   $effect(() => {
     if (browser && (isLanding || isConsent)) {
       if (user) {
-        kawasakiStore.syncWithClerk(user);
+        kawasakiStore.syncWithAuthUser(user);
       }
 
-      const clerkEmail = user?.primaryEmailAddress?.emailAddress;
+      const authEmail = user?.email;
       const localEmail = kawasakiStore.participantEmail;
-      const emailToCheck = clerkEmail || localEmail;
+      const emailToCheck = authEmail || localEmail;
 
       if (emailToCheck && !kawasakiStore.hasCheckedExisting) {
         kawasakiStore.checkExistingParticipant(emailToCheck).then((exists) => {

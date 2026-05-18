@@ -36,7 +36,7 @@
       <h2>4. Data We Collect</h2>
       <p>When you participate in our research, we collect the following data with your explicit consent:</p>
       <ul>
-        <li><strong>Account Information:</strong> Email address for authentication via Clerk</li>
+        <li><strong>Account Information:</strong> Email address and display name. Authentication is handled passwordlessly via WebAuthn / passkeys; no password is ever stored.</li>
         <li><strong>Demographic Data (Optional):</strong> Age group, gender, ethnicity, income range, medical history (ICD-10 codes)</li>
         <li><strong>Experimental Data:</strong>
           <ul>
@@ -79,7 +79,7 @@
         <li><strong>Anonymization:</strong> All research data is anonymized and cannot be traced back to individual participants</li>
         <li><strong>Encryption:</strong> Data is encrypted in transit (TLS) and at rest</li>
         <li><strong>Access Control:</strong> Only authorized researchers can access the data</li>
-        <li><strong>Secure Storage:</strong> Data is stored on secure servers hosted on Google Cloud Platform</li>
+        <li><strong>Secure Storage:</strong> Data is stored on Cloudflare D1 (relational) and Cloudflare R2 (object) with encryption at rest and in transit</li>
       </ul>
     </section>
 
@@ -87,9 +87,8 @@
       <h2>8. Third-Party Services</h2>
       <p>Our App uses the following third-party services to provide its functionality:</p>
       <ul>
-        <li><strong>Clerk</strong> (<a href="https://clerk.com/privacy">clerk.com/privacy</a>): User authentication and account management. Processes your email address.</li>
+        <li><strong>Cloudflare</strong> (<a href="https://www.cloudflare.com/privacypolicy/">cloudflare.com/privacypolicy</a>): Edge runtime (Workers), database (D1), object storage (R2), and authoritative DNS. Authentication is handled on this infrastructure; no third-party identity provider is used.</li>
         <li><strong>Hume AI</strong> (<a href="https://www.hume.ai/privacy-policy">hume.ai/privacy-policy</a>): Facial expression analysis during experiments. Processes video data captured by the camera.</li>
-        <li><strong>Google Cloud Platform</strong> (<a href="https://cloud.google.com/privacy">cloud.google.com/privacy</a>): Infrastructure, data storage, and hosting.</li>
       </ul>
       <p>Each service processes data in accordance with their own privacy policies. We do not share identifiable personal data with these services beyond what is necessary for the App's functionality.</p>
     </section>
@@ -127,7 +126,7 @@
       <h2>12. Account Deletion</h2>
       <p>You may request deletion of your account and all associated data at any time by contacting us at <a href="mailto:support@spirit-in-physics.com">support@spirit-in-physics.com</a>. Upon receiving your request, we will:</p>
       <ul>
-        <li>Delete your account and authentication data from Clerk</li>
+        <li>Delete your account, passkey credentials, and active sessions from our database</li>
         <li>Remove all identifiable personal data from our servers</li>
         <li>Complete the deletion process within 30 days</li>
       </ul>

@@ -7,16 +7,16 @@
 		<script>
 			// Runtime env injection for adapter-static
 			window.ENV = {
-				PUBLIC_CLERK_PUBLISHABLE_KEY: "",
-				PUBLIC_API_URL: "https://spirit-in-physics-api.04-feasts-minded.workers.dev/api"
+				PUBLIC_CLERK_PUBLISHABLE_KEY: "__PUBLIC_CLERK_PUBLISHABLE_KEY__",
+				PUBLIC_API_URL: "__PUBLIC_API_URL__"
 			};
 		</script>
 		
-		<link rel="modulepreload" href="/_app/immutable/entry/start.dxK6VqaB.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/CuA6SRQi.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/start.ClQS0Dm6.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/C_EOvaTA.js">
 		<link rel="modulepreload" href="/_app/immutable/chunks/C46-1ezO.js">
 		<link rel="modulepreload" href="/_app/immutable/chunks/BcvqufFC.js">
-		<link rel="modulepreload" href="/_app/immutable/entry/app.CZr-X_d5.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/app.BtykV1iV.js">
 		<link rel="modulepreload" href="/_app/immutable/chunks/Bdl2G0I9.js">
 		<link rel="modulepreload" href="/_app/immutable/chunks/BfDzqXj_.js">
 		<link rel="modulepreload" href="/_app/immutable/chunks/Dim4MYaz.js">
@@ -40,7 +40,7 @@
 		<div style="display: contents">
 			<script>
 				{
-					__sveltekit_1n6smqk = {
+					__sveltekit_1kvl86r = {
 						base: "",
 						env: null
 					};
@@ -48,11 +48,11 @@
 					const element = document.currentScript.parentElement;
 
 					import("/_app/env.js").then(({ env }) => {
-						__sveltekit_1n6smqk.env = env;
+						__sveltekit_1kvl86r.env = env;
 
 						Promise.all([
-							import("/_app/immutable/entry/start.dxK6VqaB.js"),
-							import("/_app/immutable/entry/app.CZr-X_d5.js")
+							import("/_app/immutable/entry/start.ClQS0Dm6.js"),
+							import("/_app/immutable/entry/app.BtykV1iV.js")
 						]).then(([kit, app]) => {
 							kit.start(app, element);
 						});

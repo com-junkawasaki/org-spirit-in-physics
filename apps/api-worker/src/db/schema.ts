@@ -88,6 +88,45 @@ export interface AggregateSnapshotsTable {
   updated_at_ms: number;
 }
 
+export interface UsersTable {
+  id: string;
+  email: string;
+  display_name: string | null;
+  role: string;
+  created_at_ms: number;
+  updated_at_ms: number;
+}
+
+export interface WebauthnCredentialsTable {
+  id: string;
+  user_id: string;
+  public_key: Uint8Array;
+  counter: number;
+  transports: string | null;
+  device_type: string | null;
+  backed_up: number;
+  nickname: string | null;
+  created_at_ms: number;
+  last_used_at_ms: number | null;
+}
+
+export interface WebauthnChallengesTable {
+  id: string;
+  user_id: string | null;
+  ceremony: string;
+  expires_at_ms: number;
+  created_at_ms: number;
+}
+
+export interface AuthSessionsTable {
+  id: string;
+  user_id: string;
+  expires_at_ms: number;
+  created_at_ms: number;
+  last_seen_at_ms: number;
+  user_agent: string | null;
+}
+
 export interface Database {
   participants: ParticipantsTable;
   assessment_events: AssessmentEventsTable;
@@ -97,6 +136,10 @@ export interface Database {
   graph_checkpoints: GraphCheckpointsTable;
   graph_node_events: GraphNodeEventsTable;
   aggregate_snapshots: AggregateSnapshotsTable;
+  users: UsersTable;
+  webauthn_credentials: WebauthnCredentialsTable;
+  webauthn_challenges: WebauthnChallengesTable;
+  auth_sessions: AuthSessionsTable;
 }
 
 export type ParticipantRow = Selectable<ParticipantsTable>;
@@ -125,3 +168,18 @@ export type NewGraphNodeEventRow = Insertable<GraphNodeEventsTable>;
 
 export type AggregateSnapshotRow = Selectable<AggregateSnapshotsTable>;
 export type NewAggregateSnapshotRow = Insertable<AggregateSnapshotsTable>;
+
+export type UserRow = Selectable<UsersTable>;
+export type NewUserRow = Insertable<UsersTable>;
+export type UserPatch = Updateable<UsersTable>;
+
+export type WebauthnCredentialRow = Selectable<WebauthnCredentialsTable>;
+export type NewWebauthnCredentialRow = Insertable<WebauthnCredentialsTable>;
+export type WebauthnCredentialPatch = Updateable<WebauthnCredentialsTable>;
+
+export type WebauthnChallengeRow = Selectable<WebauthnChallengesTable>;
+export type NewWebauthnChallengeRow = Insertable<WebauthnChallengesTable>;
+
+export type AuthSessionRow = Selectable<AuthSessionsTable>;
+export type NewAuthSessionRow = Insertable<AuthSessionsTable>;
+export type AuthSessionPatch = Updateable<AuthSessionsTable>;

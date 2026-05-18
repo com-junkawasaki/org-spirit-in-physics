@@ -1,30 +1,21 @@
 <script lang="ts">
-  import { SignedIn, SignedOut, SignUp, useClerkContext } from "svelte-clerk";
   import * as m from "$lib/paraglide/messages.js";
   import { resolveRoute } from "$lib/routing";
   import { runtimeConfig } from "$lib/env.svelte";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { browser } from "$app/environment";
+  import { auth } from "$lib/auth/store.svelte";
+  import SignInButton from "$lib/components/auth/SignInButton.svelte";
+  import SignUpButton from "$lib/components/auth/SignUpButton.svelte";
 
-  // Only use clerk context if key is available
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
-  const isClerkLoaded = $derived(clerk?.isLoaded ?? false);
+  onMount(() => {
+    auth.init();
+  });
 
   // On mobile, if already signed in, skip this page entirely and go to consent
   $effect(() => {
-    if (runtimeConfig.IS_CAPACITOR && clerk?.user) {
-      console.log("[Mobile] User is signed in, redirecting to consent");
+    if (runtimeConfig.IS_CAPACITOR && auth.user) {
       goto(resolveRoute('/experiment/consent'));
-    }
-  });
-
-  // Debug logging for mobile
-  $effect(() => {
-    if (browser && runtimeConfig.IS_CAPACITOR) {
-      console.log("[Mobile Debug] Clerk key:", runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? "present" : "missing");
-      console.log("[Mobile Debug] Clerk loaded:", isClerkLoaded);
-      console.log("[Mobile Debug] Clerk user:", clerk?.user ? "signed in" : "not signed in");
     }
   });
 </script>
@@ -45,65 +36,41 @@
   </div>
 
   <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800" class:mt-8={runtimeConfig.IS_CAPACITOR}>
-    {#if !clerk || !isClerkLoaded}
+    {#if auth.status !== 'ready'}
       <div class="flex flex-col items-center py-12 gap-4">
         <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Initializing Space...</p>
-        {#if runtimeConfig.IS_CAPACITOR}
-          <p class="text-[8px] text-gray-300">Mobile Mode</p>
-        {/if}
+      </div>
+    {:else if !auth.isSignedIn}
+      <div class="mb-6">
+        <h2 class="text-lg font-bold mb-2">{m.experiment_auth_title()}</h2>
+        <p class="text-xs text-gray-500 mb-6">{m.experiment_auth_subtitle()}</p>
+        <p class="text-[10px] text-orange-500 font-bold uppercase tracking-wider mb-4">
+          <i class="fas fa-exclamation-triangle mr-1"></i> {m.email_otp_required()}
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <SignUpButton class="auth-action primary" label="Create passkey" />
+        <SignInButton class="auth-action" label={m.signin()} />
       </div>
     {:else}
-      <SignedOut>
-        <div class="mb-6">
-          <h2 class="text-lg font-bold mb-2">{m.experiment_auth_title()}</h2>
-          <p class="text-xs text-gray-500 mb-6">{m.experiment_auth_subtitle()}</p>
-          <p class="text-[10px] text-orange-500 font-bold uppercase tracking-wider mb-4">
-            <i class="fas fa-exclamation-triangle mr-1"></i> {m.email_otp_required()}
-          </p>
+      <div class="text-center">
+        <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+          </svg>
         </div>
-        
-        <div class="clerk-container">
-          <SignUp 
-            routing="hash"
-            signInUrl={resolveRoute('/experiment')}
-            forceRedirectUrl={resolveRoute('/experiment/consent')}
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-none border-none p-0 bg-transparent",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                socialButtonsBlockButton: "hidden",
-                dividerRow: "hidden",
-                footerAction: "hidden",
-                formButtonPrimary: "bg-blue-600 hover:bg-blue-700 text-sm font-bold py-3 rounded-xl transition-all",
-                formFieldInput: "bg-white dark:bg-black border-gray-200 dark:border-gray-700 rounded-xl",
-                formFieldLabel: "text-[10px] font-bold uppercase text-gray-400 mb-1"
-              }
-            }}
-          />
-        </div>
-      </SignedOut>
+        <h2 class="text-xl font-bold mb-2">Ready to Start</h2>
+        <p class="text-sm text-gray-500 mb-8">You are signed in as {auth.user?.email}</p>
 
-      <SignedIn>
-        <div class="text-center">
-          <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-            </svg>
-          </div>
-          <h2 class="text-xl font-bold mb-2">Ready to Start</h2>
-          <p class="text-sm text-gray-500 mb-8">You are signed in as {clerk?.user?.primaryEmailAddress?.emailAddress}</p>
-          
-          <a 
-            href={resolveRoute('/experiment/consent')}
-            class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
-          >
-            {m.start_experiment()}
-          </a>
-        </div>
-      </SignedIn>
+        <a
+          href={resolveRoute('/experiment/consent')}
+          class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
+        >
+          {m.start_experiment()}
+        </a>
+      </div>
     {/if}
   </div>
 
@@ -129,8 +96,18 @@
 </div>
 
 <style>
-  :global(.clerk-container .cl-signUp-root) {
-    width: 100% !important;
+  :global(.auth-action) {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    font-weight: 800;
+    border: 1px solid #e5e7eb;
+    background: white;
+    cursor: pointer;
+  }
+  :global(.auth-action.primary) {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
   }
 </style>
-
