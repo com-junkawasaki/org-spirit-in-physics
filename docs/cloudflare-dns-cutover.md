@@ -1,6 +1,32 @@
 # Cloudflare DNS Cutover
 
-Executed: 2026-05-17 (drafted 2026-04-20)
+Drafted: 2026-04-20. Cloudflare-side re-executed: 2026-06-03.
+
+> **Pivot (2026-06-03):** Because the `.com` registrar (Squarespace, inherited
+> from Google Domains / GCP Cloud Domains) could not be accessed to change the
+> nameserver delegation, **`spirit-in-physics.org` was registered fresh through
+> Cloudflare Registrar** instead. That domain is Cloudflare-native end to end
+> (registrar + DNS), zone `0452956d16bf8ea94fadb4d211e16e52`, status `active`,
+> NS `everton`/`vivienne`. All three workers were bound to the `.org` apex /
+> `www` / `researcher` custom domains and `/api/*` zone routes (see each
+> `apps/*/wrangler.jsonc`), and the WebAuthn rpID logic
+> (`apps/api-worker/src/auth/webauthn.ts`) now also maps `*.spirit-in-physics.org`
+> → rpID `spirit-in-physics.org`. The `.com` config is left in place but does
+> not resolve (its registrar still delegates to the dead Google Cloud DNS). The
+> `.org` site goes fully live once first-issuance Universal SSL finishes
+> provisioning (brief `sslv3 alert handshake failure` until then is benign).
+>
+> **Status (2026-06-03):** The 2026-05-17 attempt deployed the three workers
+> but the Cloudflare zone it created (`5758b297…`, referenced in older drafts
+> of this doc) no longer exists, and the registrar nameservers were never
+> switched. On 2026-06-03 the zone was recreated as
+> `e91a9bccd062e40f90669dcfb400ddd5` (NS `everton.ns.cloudflare.com` /
+> `vivienne.ns.cloudflare.com`), the three workers were re-bound to it
+> (custom domains had been orphaned against the deleted zone and were deleted
+> + recreated), and all hostnames verified returning `100::` from both
+> Cloudflare nameservers. **Step 4 (registrar NS swap at Squarespace) is still
+> pending** — until it lands, `spirit-in-physics.com` does not resolve
+> (registrar still delegates to the dead `ns-cloud-b{1..4}.googledomains.com`).
 
 Move authoritative DNS for `spirit-in-physics.com` from Google Cloud DNS to
 Cloudflare, and bind the apex / subdomains to the Cloudflare Workers introduced
@@ -28,7 +54,8 @@ Routes are declared in:
 - `apps/api-worker/wrangler.jsonc`
 
 Cloudflare account: `ai-gftd-cloud` (`4da88288dc30d9ee257f319d3c33ecf0`).
-Zone ID: `5758b297143072debc3f9939c46c080b`.
+Zone ID: `e91a9bccd062e40f90669dcfb400ddd5` (recreated 2026-06-03; the older
+`5758b297…` zone was deleted and no longer exists).
 
 ## Starting state (May 2026)
 
@@ -103,7 +130,7 @@ succeed once Cloudflare is authoritative (Step 4).
 Verify via API:
 
 ```sh
-ZONE=5758b297143072debc3f9939c46c080b
+ZONE=e91a9bccd062e40f90669dcfb400ddd5
 ACC=4da88288dc30d9ee257f319d3c33ecf0
 curl -sH "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
   "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records?per_page=50"
@@ -134,6 +161,14 @@ HTTPS via `--resolve` is **not** useful at this stage: edge TLS handshakes
 fail until DCV completes, and DCV only completes after Step 4.
 
 ## Step 4 — Switch nameservers at the registrar (Squarespace)
+
+> **Account gotcha (found 2026-06-03):** `spirit-in-physics.com` lives in a
+> *different* Squarespace account than the one that holds `junkawasaki.com` /
+> `jk.luxury` / `kawadb.com` / `01.foundation` / `018.foundation` /
+> `neth.network`. Logging into that Google account hits "アクセスが拒否されました"
+> on the DNS settings page and the domain is absent from its domain list. Log
+> in with the Squarespace account that actually owns the domain before doing
+> the swap.
 
 1. https://account.squarespace.com/domains/managed/spirit-in-physics.com/dns/dns-settings
 2. *Nameservers* section → remove all four `ns-cloud-b{1-4}.googledomains.com`

@@ -5,7 +5,8 @@
   //   - Required secret: SESSION_SECRET (HMAC key for sip_session cookie)
   //     Set with: wrangler secret put SESSION_SECRET   (>= 32 random chars recommended)
   //   - Relying Party ID is derived from the request Origin
-  //     (apex / www / researcher all share rpID = "spirit-in-physics.com").
+  //     (apex / www / researcher of each registrable domain share an rpID:
+  //      "spirit-in-physics.com" for *.com, "spirit-in-physics.org" for *.org).
   "name": "spirit-in-physics-api",
   "account_id": "4da88288dc30d9ee257f319d3c33ecf0",
   "main": "src/index.ts",
@@ -26,6 +27,18 @@
     {
       "pattern": "researcher.spirit-in-physics.com/api/*",
       "zone_name": "spirit-in-physics.com"
+    },
+    {
+      "pattern": "spirit-in-physics.org/api/*",
+      "zone_name": "spirit-in-physics.org"
+    },
+    {
+      "pattern": "www.spirit-in-physics.org/api/*",
+      "zone_name": "spirit-in-physics.org"
+    },
+    {
+      "pattern": "researcher.spirit-in-physics.org/api/*",
+      "zone_name": "spirit-in-physics.org"
     }
   ],
   "d1_databases": [

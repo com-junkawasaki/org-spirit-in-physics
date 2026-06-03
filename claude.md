@@ -14,16 +14,22 @@ runtime has been archived (see *Architecture history* below).
 
 | Component | Source | Cloudflare resource |
 | --- | --- | --- |
-| Public web app (SvelteKit) | `apps/web` | Worker `spirit-in-physics-web`, custom domains `spirit-in-physics.com` / `www.spirit-in-physics.com`, `*.workers.dev` URL `spirit-in-physics-web.04-feasts-minded.workers.dev` |
-| Researcher dashboard (SvelteKit) | `apps/researcher` | Worker `spirit-in-physics-researcher`, custom domain `researcher.spirit-in-physics.com`, `*.workers.dev` URL `spirit-in-physics-researcher.04-feasts-minded.workers.dev` |
-| API (Hono + LangGraph Pregel + Kysely-D1) | `apps/api-worker` | Worker `spirit-in-physics-api`, zone routes `*.spirit-in-physics.com/api/*`, `*.workers.dev` URL `spirit-in-physics-api.04-feasts-minded.workers.dev` |
+| Public web app (SvelteKit) | `apps/web` | Worker `spirit-in-physics-web`, custom domains `spirit-in-physics.org` / `www.spirit-in-physics.org` (live; `.com` also bound but its registrar still delegates to dead Google Cloud DNS), `*.workers.dev` URL `spirit-in-physics-web.04-feasts-minded.workers.dev` |
+| Researcher dashboard (SvelteKit) | `apps/researcher` | Worker `spirit-in-physics-researcher`, custom domain `researcher.spirit-in-physics.org` (live; `.com` also bound), `*.workers.dev` URL `spirit-in-physics-researcher.04-feasts-minded.workers.dev` |
+| API (Hono + LangGraph Pregel + Kysely-D1) | `apps/api-worker` | Worker `spirit-in-physics-api`, zone routes `*.spirit-in-physics.org/api/*` (live; `*.spirit-in-physics.com/api/*` also bound), `*.workers.dev` URL `spirit-in-physics-api.04-feasts-minded.workers.dev` |
 | Relational store | `apps/api-worker/migrations` | D1 database `spirit-in-physics` (`f52a6c82-1f2a-444b-9ee6-a241b61bcbe5`), binding `env.DB` |
 | Object store (raw artifacts: webm / wav / CSV / Hume JSON) | uploads via `POST /api/storage/upload` | R2 bucket `spirit-in-physics-artifacts`, binding `env.ARTIFACTS` |
 | Mobile (iOS / Capacitor wrapper around web app) | `apps/mobile` | Bundle ID `com.junkawasaki.spirit-in-physics`, App ID `6758669071` |
 
 Cloudflare account: `ai-gftd-cloud` (`4da88288dc30d9ee257f319d3c33ecf0`).
-Authoritative DNS for `spirit-in-physics.com` lives in this account; registrar
-remains Squarespace. See
+**Production domain: `spirit-in-physics.org`** — registered through Cloudflare
+Registrar (registrar + authoritative DNS both Cloudflare, zone
+`0452956d16bf8ea94fadb4d211e16e52`, NS `everton`/`vivienne`, status `active`).
+`spirit-in-physics.com` remains registered at Squarespace (inherited from Google
+Domains) and still delegates to the now-dead Google Cloud DNS; it could not be
+moved to Cloudflare because the registrar account was inaccessible, so `.org`
+was registered fresh instead. The workers keep `.com` custom domains/routes
+bound too, but only `.org` resolves publicly. See
 [docs/cloudflare-dns-cutover.md](docs/cloudflare-dns-cutover.md) and
 [docs/adr-2026-05-17-cloudflare-dns-and-gcp-decommission.md](docs/adr-2026-05-17-cloudflare-dns-and-gcp-decommission.md).
 
@@ -73,10 +79,13 @@ Server config:
   `wrangler secret put SESSION_SECRET` for the `spirit-in-physics-api` Worker.
   Used for HMAC-signed session cookies (`sip_session`, HttpOnly, Secure,
   SameSite=Lax, 30-day TTL).
-- WebAuthn relying party: `rpID = spirit-in-physics.com` for production
-  (works across apex / `www` / `researcher`). `rpID = localhost` for local
-  dev. For `*.workers.dev` previews the rpID falls back to the host header,
-  so passkeys registered there don't transfer to production.
+- WebAuthn relying party: `rpID = spirit-in-physics.org` for production
+  (works across apex / `www` / `researcher` of `.org`). `rpID =
+  spirit-in-physics.com` is still mapped for the `.com` hosts, and `rpID =
+  localhost` for local dev. Passkeys are bound to a single registrable domain,
+  so `.org` and `.com` credentials are distinct. For `*.workers.dev` previews
+  the rpID falls back to the host header, so passkeys registered there don't
+  transfer to production.
 
 Roles:
 
@@ -164,9 +173,10 @@ export CLOUDFLARE_API_TOKEN=...
 pnpm --dir apps/api-worker db:migrate:remote
 ```
 
-A deploy of the api-worker creates the `*.spirit-in-physics.com/api/*` zone
-routes. A deploy of web / researcher provisions the `custom_domain` bindings
-(apex / `www` / `researcher`) and the matching proxied AAAA records.
+A deploy of the api-worker creates the `*.spirit-in-physics.org/api/*` (and
+`.com`) zone routes. A deploy of web / researcher provisions the
+`custom_domain` bindings (apex / `www` / `researcher` on both `.org` and
+`.com`) and the matching proxied AAAA records.
 
 ### Data import
 
