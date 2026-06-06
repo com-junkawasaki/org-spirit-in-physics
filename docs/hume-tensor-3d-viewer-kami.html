@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KAMI WebGPU Spirit Field</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #050505; color: #f8fafc; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+      .hud, .legend, .controls, .status { position: fixed; z-index: 2; }
+      .hud { top: 16px; left: 16px; width: min(430px, calc(100vw - 32px)); pointer-events: none; }
+      .title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+      .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 12px; color: #cbd5e1; }
+      .meta span, .legend-item, .controls button, .toggle { border: 1px solid rgba(148,163,184,.28); background: rgba(15,23,42,.62); border-radius: 6px; backdrop-filter: blur(10px); }
+      .meta span { padding: 7px 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .controls { top: 122px; left: 16px; width: min(430px, calc(100vw - 32px)); display: grid; gap: 6px; color: #cbd5e1; font-size: 12px; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .controls button { color: #cbd5e1; padding: 6px 9px; cursor: pointer; }
+      .toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; cursor: pointer; }
+      input { accent-color: #22d3ee; }
+      .legend { right: 16px; top: 16px; display: grid; gap: 8px; font-size: 12px; color: #cbd5e1; }
+      .legend-item { display: flex; align-items: center; gap: 8px; min-width: 150px; padding: 7px 9px; }
+      .swatch { width: 10px; height: 10px; border-radius: 999px; flex: 0 0 auto; }
+      .status { left: 16px; bottom: 14px; color: #94a3b8; font-size: 12px; }
+      .fallback { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; color: #cbd5e1; z-index: 4; background: #050505; }
+      .fallback.visible { display: flex; }
+    </style>
+  </head>
+  <body>
+    <canvas id="gpu"></canvas>
+    <div class="hud">
+      <div class="title" id="title">KAMI WebGPU Spirit Field</div>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="controls">
+      <div class="row"><button id="all" type="button">all</button><button id="none" type="button">none</button></div>
+      <div class="row" id="participants"></div>
+      <div class="row" id="layers"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#7dd3fc"></span>body distance</div>
+      <div class="legend-item"><span class="swatch" style="background:#facc15"></span>same stimulus</div>
+      <div class="legend-item"><span class="swatch" style="background:#22d3ee"></span>membrane surface</div>
+      <div class="legend-item"><span class="swatch" style="background:#f472b6"></span>relational membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#34d399"></span>physics cloud</div>
+    </div>
+    <div class="status" id="status">WebGPU initializing</div>
+    <div class="fallback" id="fallback"></div>
+    <script type="module">
+      const canvas = document.getElementById("gpu");
+      const meta = document.getElementById("meta");
+      const status = document.getElementById("status");
+      const fallback = document.getElementById("fallback");
+      const participantHost = document.getElementById("participants");
+      const layerHost = document.getElementById("layers");
+      window.addEventListener("error", (event) => { status.textContent = `error: ${event.message}`; });
+      window.addEventListener("unhandledrejection", (event) => { status.textContent = `error: ${event.reason?.message || event.reason}`; });
+
+      const graph = await fetch("../manifests/hume-tensor-3d-samples.json").then((r) => r.json());
+      document.getElementById("title").textContent = "KAMI WebGPU Spirit Field";
+
+      const kamiBridge = await tryKamiBridge();
+      const participants = Array.from(new Set(graph.nodes.map((node) => node.participantId).filter(Boolean))).sort();
+      let selected = new Set(participants);
+      const activeLayers = new Set(["phaseField", "rho"]);
+      let rendererMode = "pending";
+      let fallbackState = null;
+      const layerDefs = [
+        ["phaseField", "phase", "#22d3ee"],
+        ["diffuseInterface", "diffuse", "#a78bfa"],
+        ["rho", "rho", "#34d399"],
+        ["cahnHilliard", "cahn", "#facc15"],
+        ["levelSet", "level", "#60a5fa"],
+        ["homology", "homology", "#f472b6"],
+      ];
+
+      participantHost.innerHTML = participants.map((participant, index) => `
+        <label class="toggle" title="${participant}">
+          <input type="checkbox" value="${participant}" checked>
+          <span style="color:${rgb(participantColor(index))}">${participant.slice(0, 8)}</span>
+        </label>
+      `).join("");
+      layerHost.innerHTML = layerDefs.map(([key, label, color]) => `
+        <label class="toggle"><input type="checkbox" value="${key}" ${activeLayers.has(key) ? "checked" : ""}><span style="color:${color}">${label}</span></label>
+      `).join("");
+      participantHost.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
+        input.checked ? selected.add(input.value) : selected.delete(input.value);
+        refreshView();
+      }));
+      layerHost.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
+        input.checked ? activeLayers.add(input.value) : activeLayers.delete(input.value);
+        refreshView();
+      }));
+      document.getElementById("all").onclick = () => { selected = new Set(participants); participantHost.querySelectorAll("input").forEach((i) => i.checked = true); refreshView(); };
+      document.getElementById("none").onclick = () => { selected = new Set(); participantHost.querySelectorAll("input").forEach((i) => i.checked = false); refreshView(); };
+
+      if (!navigator.gpu) {
+        startCanvasFallback("WebGPU unavailable; KAMI view is using Canvas fallback.");
+        await new Promise(() => {});
+      }
+
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        startCanvasFallback("WebGPU adapter unavailable; KAMI view is using Canvas fallback.");
+        await new Promise(() => {});
+      }
+      const device = await adapter.requestDevice();
+      const context = canvas.getContext("webgpu");
+      const format = navigator.gpu.getPreferredCanvasFormat();
+      configureContext();
+
+      const data = buildGpuData(graph);
+      const nodeBuffer = storageBuffer(data.nodes.byteLength, GPUBufferUsage.COPY_DST);
+      const linkBuffer = storageBuffer(data.links.byteLength, GPUBufferUsage.COPY_DST);
+      const surfaceBuffer = storageBuffer(data.surfaces.byteLength, GPUBufferUsage.COPY_DST);
+      const uniformBuffer = device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      const countsBuffer = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+
+      const shader = device.createShaderModule({ code: wgslSource() });
+      const bindGroupLayout = device.createBindGroupLayout({ entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+      ]});
+      const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+      const bindGroup = device.createBindGroup({ layout: bindGroupLayout, entries: [
+        { binding: 0, resource: { buffer: nodeBuffer } },
+        { binding: 1, resource: { buffer: linkBuffer } },
+        { binding: 2, resource: { buffer: surfaceBuffer } },
+        { binding: 3, resource: { buffer: uniformBuffer } },
+        { binding: 4, resource: { buffer: countsBuffer } },
+      ]});
+      const nodePipeline = makePipeline("vsNode", "fsNode", "triangle-list");
+      const linePipeline = makePipeline("vsLine", "fsLine", "line-list");
+      const surfacePipeline = makePipeline("vsSurface", "fsSurface", "triangle-list");
+
+      let rotX = -0.56, rotY = 0.62, zoom = 2.1, dragging = false, lastX = 0, lastY = 0;
+      canvas.addEventListener("pointerdown", (event) => { dragging = true; lastX = event.clientX; lastY = event.clientY; });
+      window.addEventListener("pointerup", () => dragging = false);
+      window.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        rotY += (event.clientX - lastX) * 0.006;
+        rotX = Math.max(-1.35, Math.min(1.35, rotX + (event.clientY - lastY) * 0.006));
+        lastX = event.clientX; lastY = event.clientY;
+      });
+      window.addEventListener("wheel", (event) => { event.preventDefault(); zoom = Math.max(0.35, Math.min(5.4, zoom - event.deltaY * 0.002)); }, { passive: false });
+      window.addEventListener("resize", resize);
+
+      try {
+        rendererMode = "gpu";
+        rebuildVisibility();
+        resize();
+        requestAnimationFrame(frame);
+      } catch (error) {
+        status.textContent = `WebGPU init failed: ${error.message}`;
+        throw error;
+      }
+
+      async function tryKamiBridge() {
+        try {
+          const mod = await import("./kami-web/kamiWeb.js");
+          status.textContent = "KAMI wasm bridge detected; WebGPU adapter active";
+          return mod;
+        } catch {
+          status.textContent = "KAMI wasm bridge not found; WebGPU adapter active";
+          return null;
+        }
+      }
+
+      function resize() {
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(innerWidth * dpr);
+        canvas.height = Math.floor(innerHeight * dpr);
+        configureContext();
+      }
+
+      function configureContext() {
+        context.configure({ device, format, alphaMode: "opaque" });
+      }
+
+      function frame(t) {
+        const m = uniforms(rotX, rotY, zoom, canvas.width / Math.max(1, canvas.height), t * 0.001);
+        device.queue.writeBuffer(uniformBuffer, 0, m);
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), clearValue: { r: 0.02, g: 0.02, b: 0.02, a: 1 }, loadOp: "clear", storeOp: "store" }] });
+        pass.setBindGroup(0, bindGroup);
+        pass.setPipeline(surfacePipeline);
+        pass.draw(3, data.surfaceCount);
+        pass.setPipeline(linePipeline);
+        pass.draw(2, data.linkCount);
+        pass.setPipeline(nodePipeline);
+        pass.draw(6, data.nodeCount);
+        pass.end();
+        device.queue.submit([encoder.finish()]);
+        requestAnimationFrame(frame);
+      }
+
+      function refreshView() {
+        if (rendererMode === "gpu") rebuildVisibility();
+        if (rendererMode === "canvas") updateFallbackMeta();
+      }
+
+      function rebuildVisibility() {
+        const nodeFloats = new Float32Array(data.nodes);
+        for (let i = 0; i < data.nodeCount; i++) {
+          const node = graph.nodes[i];
+          const visible = !node.participantId || selected.has(node.participantId);
+          nodeFloats[i * 12 + 11] = visible ? layerValue(node) : -1;
+        }
+        const linkFloats = new Float32Array(data.links);
+        for (let i = 0; i < data.linkCount; i++) {
+          const source = graph.links[i].source, target = graph.links[i].target;
+          const visible = nodeFloats[source * 12 + 11] >= 0 && nodeFloats[target * 12 + 11] >= 0;
+          linkFloats[i * 12 + 11] = visible ? 1 : -1;
+        }
+        const surfaceFloats = new Float32Array(data.surfaces);
+        for (let i = 0; i < data.surfaceCount; i++) {
+          const a = data.surfaceNodeRefs[i * 3], b = data.surfaceNodeRefs[i * 3 + 1], c = data.surfaceNodeRefs[i * 3 + 2];
+          const visible = nodeFloats[a * 12 + 11] >= 0 && nodeFloats[b * 12 + 11] >= 0 && nodeFloats[c * 12 + 11] >= 0;
+          surfaceFloats[i * 16 + 15] = visible ? 1 : -1;
+        }
+        device.queue.writeBuffer(nodeBuffer, 0, nodeFloats);
+        device.queue.writeBuffer(linkBuffer, 0, linkFloats);
+        device.queue.writeBuffer(surfaceBuffer, 0, surfaceFloats);
+        device.queue.writeBuffer(countsBuffer, 0, new Uint32Array([data.nodeCount, data.linkCount, data.surfaceCount, 0]));
+        const visibleCount = graph.nodes.filter((node) => !node.participantId || selected.has(node.participantId)).length;
+        meta.innerHTML = [`samples ${graph.shape.sampleNodes || graph.shape.samples}`, `words ${graph.shape.uniqueWords || 0}`, `checked ${selected.size}/${participants.length}`, `visible ${visibleCount}`].map((x) => `<span>${x}</span>`).join("");
+      }
+
+      function startCanvasFallback(message) {
+        rendererMode = "canvas";
+        fallback.classList.remove("visible");
+        status.textContent = message;
+        const ctx = canvas.getContext("2d", { alpha: false });
+        fallbackState = { ctx, rotX: -0.56, rotY: 0.62, zoom: 2.1, dragging: false, lastX: 0, lastY: 0 };
+        canvas.addEventListener("pointerdown", (event) => {
+          fallbackState.dragging = true;
+          fallbackState.lastX = event.clientX;
+          fallbackState.lastY = event.clientY;
+        });
+        window.addEventListener("pointerup", () => { if (fallbackState) fallbackState.dragging = false; });
+        window.addEventListener("pointermove", (event) => {
+          if (!fallbackState?.dragging) return;
+          fallbackState.rotY += (event.clientX - fallbackState.lastX) * 0.006;
+          fallbackState.rotX = Math.max(-1.35, Math.min(1.35, fallbackState.rotX + (event.clientY - fallbackState.lastY) * 0.006));
+          fallbackState.lastX = event.clientX;
+          fallbackState.lastY = event.clientY;
+        });
+        window.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          fallbackState.zoom = Math.max(0.35, Math.min(5.4, fallbackState.zoom - event.deltaY * 0.002));
+        }, { passive: false });
+        window.addEventListener("resize", resizeFallbackCanvas);
+        resizeFallbackCanvas();
+        updateFallbackMeta();
+        requestAnimationFrame(drawFallbackFrame);
+      }
+
+      function resizeFallbackCanvas() {
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(innerWidth * dpr);
+        canvas.height = Math.floor(innerHeight * dpr);
+      }
+
+      function updateFallbackMeta() {
+        const visibleCount = graph.nodes.filter((node) => isNodeVisible(node)).length;
+        meta.innerHTML = [`samples ${graph.shape.sampleNodes || graph.shape.samples}`, `words ${graph.shape.uniqueWords || 0}`, `checked ${selected.size}/${participants.length}`, `visible ${visibleCount}`].map((x) => `<span>${x}</span>`).join("");
+      }
+
+      function drawFallbackFrame(t) {
+        if (!fallbackState) return;
+        const ctx = fallbackState.ctx;
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = "#050505";
+        ctx.fillRect(0, 0, w, h);
+        drawFallbackGrid(ctx, w, h);
+
+        const projected = graph.nodes.map((node) => ({ node, p: projectFallback(node.initial || [0, 0, 0]) }));
+        const visibleProjected = projected.filter(({ node }) => isNodeVisible(node));
+        drawFallbackMembrane(ctx, projected, "personalMembrane", "rgba(167,139,250,0.12)", "rgba(167,139,250,0.55)");
+        drawFallbackMembrane(ctx, projected, "collectiveMembrane", "rgba(34,211,238,0.13)", "rgba(34,211,238,0.72)");
+        for (const membrane of graph.relationalMembranes || []) drawFallbackRelationalMembrane(ctx, projected, membrane);
+
+        ctx.lineWidth = Math.max(1, Math.min(2, w / 1200));
+        for (const link of graph.links) {
+          const source = projected[link.source];
+          const target = projected[link.target];
+          if (!source || !target || !isNodeVisible(source.node) || !isNodeVisible(target.node)) continue;
+          const alpha = link.mode === "same_stimulus" ? 0.22 : 0.10;
+          ctx.strokeStyle = link.mode === "same_stimulus" ? `rgba(250,204,21,${alpha})` : `rgba(125,211,252,${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(source.p.x, source.p.y);
+          ctx.lineTo(target.p.x, target.p.y);
+          ctx.stroke();
+        }
+
+        visibleProjected.sort((a, b) => a.p.z - b.p.z);
+        for (const { node, p } of visibleProjected) {
+          const pulse = Math.sin(t * 0.002 + (node.timeIndex || 0) * 0.37) * 0.5 + 0.5;
+          const layer = layerValue(node);
+          const radius = (3.4 + (node.scale || 1) * 2.6 + layer * 4.5) * p.s;
+          const color = hexToRgb(node.color || "#94a3b8");
+          const glow = Math.min(0.75, 0.20 + (node.boundaryScore || 0) * 0.4 + pulse * 0.12);
+          ctx.fillStyle = `rgba(${color[0]},${color[1]},${color[2]},${0.70 + Math.min(0.25, layer * 0.18)})`;
+          ctx.shadowColor = `rgba(${color[0]},${color[1]},${color[2]},${glow})`;
+          ctx.shadowBlur = 8 + layer * 14;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        for (const { node, p } of visibleProjected.filter(({ node }) => node.boundaryScore > 0.78 || node.voidRegion).slice(0, 34)) {
+          ctx.fillStyle = node.voidRegion ? "rgba(45,212,191,0.82)" : "rgba(248,250,252,0.84)";
+          ctx.font = `${Math.max(10, Math.min(15, canvas.width / 110))}px system-ui, sans-serif`;
+          ctx.fillText(node.label || "void", p.x + 7, p.y - 7);
+        }
+
+        status.textContent = `${kamiBridge ? "KAMI bridge detected" : "KAMI bridge pending"}; Canvas fallback rendering ${selected.size}/${participants.length} participants`;
+        requestAnimationFrame(drawFallbackFrame);
+      }
+
+      function drawFallbackGrid(ctx, w, h) {
+        ctx.strokeStyle = "rgba(30,41,59,0.55)";
+        ctx.lineWidth = 1;
+        const baseY = h * 0.78;
+        for (let i = -12; i <= 12; i++) {
+          ctx.beginPath();
+          ctx.moveTo(w * 0.5 + i * 55, baseY - 120);
+          ctx.lineTo(w * 0.5 + i * 96, h);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, baseY + i * 34);
+          ctx.lineTo(w, baseY + i * 34);
+          ctx.stroke();
+        }
+      }
+
+      function drawFallbackMembrane(ctx, projected, key, fill, stroke) {
+        const group = projected.filter(({ node }) => node[key] && isNodeVisible(node)).map(({ node, p }) => [node, p]);
+        drawFallbackHull(ctx, group, fill, stroke, 2);
+      }
+
+      function drawFallbackRelationalMembrane(ctx, projected, membrane) {
+        const group = membrane.nodeIndices.map((index) => projected[index]).filter((entry) => entry && isNodeVisible(entry.node)).map(({ node, p }) => [node, p]);
+        const c = hexToRgb(membrane.color || "#f472b6");
+        const alpha = Math.min(0.22, 0.08 + (membrane.score || 0) * 0.16);
+        drawFallbackHull(ctx, group, `rgba(${c[0]},${c[1]},${c[2]},${alpha})`, `rgba(${c[0]},${c[1]},${c[2]},0.58)`, 1.5);
+      }
+
+      function drawFallbackHull(ctx, group, fill, stroke, width) {
+        if (group.length < 3) return;
+        const sorted = group.slice().sort((a, b) => a[1].x === b[1].x ? a[1].y - b[1].y : a[1].x - b[1].x);
+        const cross = (o, a, b) => (a[1].x - o[1].x) * (b[1].y - o[1].y) - (a[1].y - o[1].y) * (b[1].x - o[1].x);
+        const lower = [];
+        for (const point of sorted) {
+          while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+          lower.push(point);
+        }
+        const upper = [];
+        for (let i = sorted.length - 1; i >= 0; i--) {
+          const point = sorted[i];
+          while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+          upper.push(point);
+        }
+        lower.pop(); upper.pop();
+        const hull = lower.concat(upper);
+        if (hull.length < 3) return;
+        ctx.save();
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = width * Math.min(devicePixelRatio || 1, 2);
+        ctx.shadowColor = stroke;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(hull[0][1].x, hull[0][1].y);
+        for (let i = 1; i < hull.length; i++) ctx.lineTo(hull[i][1].x, hull[i][1].y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function projectFallback(point) {
+        const state = fallbackState || { rotX: -0.56, rotY: 0.62, zoom: 2.1 };
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        const cx = Math.cos(state.rotX), sx = Math.sin(state.rotX), cy = Math.cos(state.rotY), sy = Math.sin(state.rotY);
+        const x1 = point[0] * cy - point[2] * sy;
+        const z1 = point[0] * sy + point[2] * cy;
+        const y1 = point[1] * cx - z1 * sx;
+        const z2 = point[1] * sx + z1 * cx;
+        const scale = state.zoom * (canvas.width / 980);
+        const persp = 760 / (760 + z2);
+        return { x: canvas.width * 0.56 + x1 * scale * persp, y: canvas.height * 0.57 - y1 * scale * persp, z: z2, s: Math.max(0.45, Math.min(1.9, persp * dpr)) };
+      }
+
+      function isNodeVisible(node) {
+        return !node.participantId || selected.has(node.participantId);
+      }
+
+      function layerValue(node) {
+        if (!node.physics) return 0;
+        let value = 0;
+        for (const layer of activeLayers) value = Math.max(value, Math.abs(Number(node.physics[layer] || 0)));
+        return value;
+      }
+
+      function buildGpuData(graph) {
+        const nodes = new Float32Array(graph.nodes.length * 12);
+        graph.nodes.forEach((node, i) => {
+          const c = hexToRgb(node.color || "#94a3b8").map((x) => x / 255);
+          const p = node.initial || [0, 0, 0];
+          nodes.set([p[0], p[1], p[2], node.scale || 1, c[0], c[1], c[2], 1, node.fieldValue || 0, node.boundaryScore || 0, node.residualScore || 0, 1], i * 12);
+        });
+        const links = new Float32Array(graph.links.length * 12);
+        graph.links.forEach((link, i) => {
+          const a = graph.nodes[link.source].initial, b = graph.nodes[link.target].initial;
+          const color = link.mode === "same_stimulus" ? [250, 204, 21] : link.mode === "time_trace" ? [52, 211, 153] : [125, 211, 252];
+          links.set([a[0], a[1], a[2], 0, b[0], b[1], b[2], 0, color[0] / 255, color[1] / 255, color[2] / 255, 0.25 + (link.weight || 0) * 0.35], i * 12);
+        });
+        const surfaceTriangles = buildSurfaceTriangles(graph);
+        const surfaces = new Float32Array(surfaceTriangles.length * 16);
+        const surfaceNodeRefs = new Uint32Array(surfaceTriangles.length * 3);
+        surfaceTriangles.forEach((tri, i) => {
+          const color = tri.color.map((x) => x / 255);
+          surfaces.set([tri.a[0], tri.a[1], tri.a[2], 0, tri.b[0], tri.b[1], tri.b[2], 0, tri.c[0], tri.c[1], tri.c[2], 0, color[0], color[1], color[2], tri.alpha], i * 16);
+          surfaceNodeRefs.set(tri.refs, i * 3);
+        });
+        return { nodes: nodes.buffer, links: links.buffer, surfaces: surfaces.buffer, surfaceNodeRefs, nodeCount: graph.nodes.length, linkCount: graph.links.length, surfaceCount: surfaceTriangles.length };
+      }
+
+      function buildSurfaceTriangles(graph) {
+        const triangles = [];
+        const collective = graph.nodes.map((n, i) => [n, i]).filter(([n]) => n.collectiveMembrane);
+        addFan(collective, [34, 211, 238], 0.20);
+        for (const membrane of graph.relationalMembranes || []) {
+          const group = membrane.nodeIndices.map((i) => [graph.nodes[i], i]).filter(([n]) => n);
+          addFan(group, hexToRgb(membrane.color || "#f472b6"), 0.26 + Math.min(0.5, membrane.score || 0));
+        }
+        function addFan(group, color, alpha) {
+          if (group.length < 3) return;
+          const sorted = hull2d(group);
+          if (sorted.length < 3) return;
+          const center = sorted.reduce((acc, [n]) => [acc[0] + n.initial[0] / sorted.length, acc[1] + n.initial[1] / sorted.length, acc[2] + n.initial[2] / sorted.length], [0, 0, 0]);
+          for (let i = 0; i < sorted.length; i++) {
+            const [a, ai] = sorted[i], [b, bi] = sorted[(i + 1) % sorted.length];
+            triangles.push({ a: center, b: a.initial, c: b.initial, color, alpha: Math.min(alpha, 0.13), refs: [ai, ai, bi] });
+          }
+        }
+        return triangles;
+      }
+
+      function hull2d(group) {
+        const points = group.slice().sort(([a], [b]) => a.initial[0] === b.initial[0] ? a.initial[1] - b.initial[1] : a.initial[0] - b.initial[0]);
+        if (points.length <= 3) return points;
+        const cross = (o, a, b) => (a[0].initial[0] - o[0].initial[0]) * (b[0].initial[1] - o[0].initial[1]) - (a[0].initial[1] - o[0].initial[1]) * (b[0].initial[0] - o[0].initial[0]);
+        const lower = [];
+        for (const point of points) {
+          while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+          lower.push(point);
+        }
+        const upper = [];
+        for (let i = points.length - 1; i >= 0; i--) {
+          const point = points[i];
+          while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+          upper.push(point);
+        }
+        lower.pop(); upper.pop();
+        return lower.concat(upper);
+      }
+
+      function makePipeline(vs, fs, topology) {
+        return device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: { module: shader, entryPoint: vs },
+          fragment: { module: shader, entryPoint: fs, targets: [{ format, blend: { color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha" } } }] },
+          primitive: { topology },
+        });
+      }
+
+      function storageBuffer(size, usage) { return device.createBuffer({ size: Math.max(16, size), usage: GPUBufferUsage.STORAGE | usage }); }
+      function uniforms(rx, ry, z, aspect, time) { return new Float32Array([rx, ry, z, aspect, canvas.width, canvas.height, time, 0, 0, 0, 0, 0, 0, 0, 0, 0]); }
+      function participantColor(index) { return [[167,139,250],[244,114,182],[96,165,250],[52,211,153],[251,146,60],[250,204,21],[45,212,191]][index % 7]; }
+      function rgb(color) { return `rgb(${color.join(",")})`; }
+      function hexToRgb(hex) { const h = String(hex).replace("#", ""); return h.length === 6 ? [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)] : [148,163,184]; }
+
+      function wgslSource() { return `
+struct Node { pos: vec4f, color: vec4f, phys: vec4f };
+struct Link { a: vec4f, b: vec4f, color: vec4f };
+struct Surf { a: vec4f, b: vec4f, c: vec4f, color: vec4f };
+@group(0) @binding(0) var<storage, read> nodes: array<Node>;
+@group(0) @binding(1) var<storage, read> links: array<Link>;
+@group(0) @binding(2) var<storage, read> surfs: array<Surf>;
+@group(0) @binding(3) var<uniform> u: vec4f;
+@group(0) @binding(4) var<uniform> counts: vec4u;
+struct Out { @builtin(position) pos: vec4f, @location(0) color: vec4f, @location(1) uv: vec2f };
+fn project(p: vec3f) -> vec4f {
+  let cx = cos(u.x); let sx = sin(u.x); let cy = cos(u.y); let sy = sin(u.y);
+  let x1 = p.x * cy - p.z * sy; let z1 = p.x * sy + p.z * cy;
+  let y1 = p.y * cx - z1 * sx; let z2 = p.y * sx + z1 * cx;
+  let persp = 720.0 / (720.0 + z2);
+  return vec4f((x1 * u.z * persp) / 380.0 / u.w, (-y1 * u.z * persp) / 380.0, z2 / 1000.0, 1.0);
+}
+@vertex fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out {
+  let n = nodes[ii]; var corners = array<vec2f, 6>(vec2f(-1,-1), vec2f(1,-1), vec2f(-1,1), vec2f(-1,1), vec2f(1,-1), vec2f(1,1));
+  var out: Out; let base = project(n.pos.xyz); let s = (0.008 + n.pos.w * 0.006 + n.phys.w * 0.018) * select(0.0, 1.0, n.phys.w >= 0.0);
+  out.pos = vec4f(base.xy + corners[vi] * s, base.z, 1); out.color = vec4f(n.color.rgb + n.phys.w * vec3f(0.05,0.18,0.14), 0.88); out.uv = corners[vi]; return out;
+}
+@fragment fn fsNode(in: Out) -> @location(0) vec4f { let d = length(in.uv); if (d > 1.0) { discard; } return vec4f(in.color.rgb * (1.2 - d * 0.45), in.color.a); }
+@vertex fn vsLine(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out {
+  let l = links[ii]; var out: Out; let p = select(l.a.xyz, l.b.xyz, vi == 1u); let v = select(l.a.w, l.b.w, vi == 1u); out.pos = project(p); out.color = vec4f(l.color.rgb, l.color.a * select(0.0, 1.0, l.color.w >= 0.0)); out.uv = vec2f(); return out;
+}
+@fragment fn fsLine(in: Out) -> @location(0) vec4f { return in.color; }
+@vertex fn vsSurface(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out {
+  let s = surfs[ii]; var out: Out; let p = select(select(s.a.xyz, s.b.xyz, vi == 1u), s.c.xyz, vi == 2u); out.pos = project(p); out.color = vec4f(s.color.rgb, s.color.a * select(0.0, 1.0, s.color.w >= 0.0)); out.uv = vec2f(); return out;
+}
+@fragment fn fsSurface(in: Out) -> @location(0) vec4f { return in.color; }`; }
+    </script>
+  </body>
+</html>

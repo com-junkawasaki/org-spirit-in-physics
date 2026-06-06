@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Three WebGPU Spirit Field</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #050505; color: #f8fafc; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      .hud, .legend, .controls, .status, .tooltip { position: fixed; z-index: 2; }
+      .hud { top: 16px; left: 16px; width: min(430px, calc(100vw - 32px)); pointer-events: none; }
+      .title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+      .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 12px; color: #cbd5e1; }
+      .meta span, .legend-item, .controls button, .toggle { border: 1px solid rgba(148,163,184,.28); background: rgba(15,23,42,.62); border-radius: 6px; backdrop-filter: blur(10px); }
+      .meta span { padding: 7px 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .controls { top: 122px; left: 16px; width: min(520px, calc(100vw - 32px)); display: grid; gap: 6px; color: #cbd5e1; font-size: 12px; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .controls button { color: #cbd5e1; padding: 6px 9px; cursor: pointer; }
+      .toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; cursor: pointer; }
+      input { accent-color: #22d3ee; }
+      .legend { right: 16px; top: 16px; display: grid; gap: 8px; font-size: 12px; color: #cbd5e1; }
+      .legend-item { display: flex; align-items: center; gap: 8px; min-width: 150px; padding: 7px 9px; }
+      .swatch { width: 10px; height: 10px; border-radius: 999px; flex: 0 0 auto; }
+      .status { left: 16px; bottom: 14px; color: #94a3b8; font-size: 12px; }
+      .tooltip { left: 0; top: 0; min-width: 220px; max-width: 320px; padding: 10px 12px; border: 1px solid rgba(148,163,184,.36); background: rgba(2,6,23,.86); color: #f8fafc; border-radius: 6px; font-size: 12px; line-height: 1.45; transform: translate(12px, 12px); pointer-events: none; opacity: 0; transition: opacity 120ms ease; backdrop-filter: blur(12px); }
+      .tooltip.visible { opacity: 1; }
+      .tooltip strong { display: block; font-size: 13px; margin-bottom: 4px; }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three/webgpu": "https://unpkg.com/three@0.181.2/build/three.webgpu.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div class="hud">
+      <div class="title" id="title">Three WebGPU Spirit Field</div>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="controls">
+      <div class="row"><button id="all" type="button">all</button><button id="none" type="button">none</button></div>
+      <div class="row" id="participants"></div>
+      <div class="row" id="layers"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#7dd3fc"></span>body distance</div>
+      <div class="legend-item"><span class="swatch" style="background:#facc15"></span>same stimulus</div>
+      <div class="legend-item"><span class="swatch" style="background:#22d3ee"></span>collective membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#a78bfa"></span>personal membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#f472b6"></span>relational membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#34d399"></span>physics cloud</div>
+      <div class="legend-item"><span class="swatch" style="background:#f8fafc"></span>word labels</div>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="status" id="status">Three.js renderer initializing</div>
+
+    <script type="module">
+      import * as THREE from "three/webgpu";
+
+      let canvas = document.getElementById("scene");
+      const meta = document.getElementById("meta");
+      const status = document.getElementById("status");
+      const tooltip = document.getElementById("tooltip");
+      const participantHost = document.getElementById("participants");
+      const layerHost = document.getElementById("layers");
+
+      const graph = await fetch("../manifests/hume-tensor-3d-samples.json").then((response) => {
+        if (!response.ok) throw new Error(`Failed to load graph: ${response.status}`);
+        return response.json();
+      });
+      document.getElementById("title").textContent = "Three WebGPU Spirit Field";
+
+      const participants = Array.from(new Set(graph.nodes.map((node) => node.participantId).filter(Boolean))).sort();
+      let selected = new Set(participants);
+      const activeLayers = new Set(["phaseField", "rho"]);
+      const layerDefs = [
+        ["phaseField", "phase", "#22d3ee"],
+        ["diffuseInterface", "diffuse", "#a78bfa"],
+        ["rho", "rho", "#34d399"],
+        ["cahnHilliard", "cahn", "#facc15"],
+        ["levelSet", "level", "#60a5fa"],
+        ["homology", "homology", "#f472b6"],
+      ];
+
+      participantHost.innerHTML = participants.map((participant, index) => `
+        <label class="toggle" title="${participant}">
+          <input type="checkbox" value="${participant}" checked>
+          <span style="color:${rgb(participantColor(index))}">${participant.slice(0, 8)}</span>
+        </label>
+      `).join("");
+      layerHost.innerHTML = layerDefs.map(([key, label, color]) => `
+        <label class="toggle"><input type="checkbox" value="${key}" ${activeLayers.has(key) ? "checked" : ""}><span style="color:${color}">${label}</span></label>
+      `).join("");
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050505);
+      const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 4000);
+      camera.position.set(0, 120, 780);
+
+      const renderer = await createRenderer();
+      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setClearColor(0x050505, 1);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+      keyLight.position.set(250, 420, 500);
+      scene.add(keyLight);
+      const grid = new THREE.GridHelper(760, 16, 0x1e293b, 0x172033);
+      grid.position.y = -160;
+      scene.add(grid);
+
+      const root = new THREE.Group();
+      root.rotation.x = -0.56;
+      root.rotation.y = 0.62;
+      root.scale.setScalar(1.05);
+      scene.add(root);
+
+      const nodeObjects = [];
+      const labelObjects = [];
+      const physicsObjects = [];
+      const linkObjects = [];
+      const membraneObjects = [];
+      const rayTargets = [];
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2(-2, -2);
+      let hovered = null;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      buildScene();
+      bindControls();
+      updateVisibility();
+      animate();
+
+      async function createRenderer() {
+        const adapter = await requestWebGPUAdapter();
+        if (adapter && THREE.WebGPURenderer) {
+          try {
+            const webgpu = new THREE.WebGPURenderer({ canvas, antialias: true, alpha: false });
+            await webgpu.init();
+            status.textContent = "Three.js WebGPU renderer active";
+            return webgpu;
+          } catch (error) {
+            canvas = replaceRenderCanvas();
+            status.textContent = "WebGPU init failed; Three.js WebGL renderer active";
+          }
+        } else {
+          status.textContent = "WebGPU adapter unavailable; Three.js WebGL renderer active";
+        }
+        try {
+          const context = canvas.getContext("webgl2", { antialias: true, alpha: false })
+            || canvas.getContext("webgl", { antialias: true, alpha: false });
+          if (!context) throw new Error("WebGL context unavailable");
+          const webgl = new THREE.WebGLRenderer({ canvas, context, antialias: true, alpha: false });
+          return webgl;
+        } catch (error) {
+          status.textContent = `GPU renderer unavailable; open the Canvas viewer (${error.message})`;
+          throw error;
+        }
+      }
+
+      async function requestWebGPUAdapter() {
+        if (!navigator.gpu) return null;
+        try {
+          return await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+        } catch {
+          return null;
+        }
+      }
+
+      function replaceRenderCanvas() {
+        const replacement = document.createElement("canvas");
+        replacement.id = "scene";
+        canvas.replaceWith(replacement);
+        return replacement;
+      }
+
+      function buildScene() {
+        drawMembranes();
+        drawLinks();
+        drawNodes();
+        drawPhysicsClouds();
+      }
+
+      function drawNodes() {
+        const sphere = new THREE.SphereGeometry(1, 18, 12);
+        graph.nodes.forEach((node, index) => {
+          const color = new THREE.Color(node.color || "#94a3b8");
+          const material = new THREE.MeshStandardMaterial({
+            color,
+            emissive: color,
+            emissiveIntensity: node.membrane ? 0.35 : 0.18,
+            roughness: 0.42,
+            metalness: 0.08,
+            transparent: true,
+            opacity: node.nodeType === "void_region" ? 0.62 : 0.88,
+          });
+          const mesh = new THREE.Mesh(sphere, material);
+          mesh.position.fromArray(node.initial || [0, 0, 0]);
+          const layer = layerValue(node);
+          const scale = (node.nodeType === "void_region" ? 4.2 : 2.6 + (node.scale || 1) * 2.0 + layer * 4.0);
+          mesh.scale.setScalar(scale);
+          mesh.userData = { node, index, baseScale: scale, material };
+          root.add(mesh);
+          nodeObjects.push(mesh);
+          rayTargets.push(mesh);
+
+          if (shouldLabel(node)) {
+            const label = makeLabelSprite(node.label || "", node.color || "#f8fafc", node.nodeType === "word_anchor" ? 14 : 18);
+            label.position.copy(mesh.position);
+            label.position.y += scale * 5 + 10;
+            label.userData = { node, follows: mesh };
+            root.add(label);
+            labelObjects.push(label);
+          }
+        });
+      }
+
+      function drawLinks() {
+        const materialByMode = {
+          body_distance: new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.16 }),
+          same_stimulus: new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.28 }),
+          time_trace: new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.22 }),
+          tension: new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.24 }),
+        };
+        for (const link of graph.links) {
+          const source = graph.nodes[link.source];
+          const target = graph.nodes[link.target];
+          if (!source || !target) continue;
+          const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(...source.initial),
+            new THREE.Vector3(...target.initial),
+          ]);
+          const material = materialByMode[link.mode] || materialByMode.body_distance;
+          const line = new THREE.Line(geometry, material);
+          line.userData = { link, source, target };
+          root.add(line);
+          linkObjects.push(line);
+        }
+      }
+
+      function drawMembranes() {
+        const personalGroups = new Map();
+        graph.nodes.forEach((node, index) => {
+          if (!node.personalMembrane) return;
+          const key = node.participantId || "unknown";
+          if (!personalGroups.has(key)) personalGroups.set(key, []);
+          personalGroups.get(key).push([node, index]);
+        });
+        let groupIndex = 0;
+        for (const [participant, group] of personalGroups.entries()) {
+          const strength = average(group.map(([node]) => node.boundaryScore || 0));
+          addMembraneSurface(group, {
+            color: participantColor(groupIndex),
+            alpha: 0.13 + strength * 0.18,
+            participant,
+            kind: "personal",
+          });
+          groupIndex += 1;
+        }
+
+        addMembraneSurface(graph.nodes.map((node, index) => [node, index]).filter(([node]) => node.collectiveMembrane), {
+          color: [34, 211, 238],
+          alpha: 0.22,
+          kind: "collective",
+        });
+
+        for (const membrane of graph.relationalMembranes || []) {
+          addMembraneSurface(membrane.nodeIndices.map((index) => [graph.nodes[index], index]).filter(([node]) => node), {
+            color: hexToRgb(membrane.color || "#f472b6"),
+            alpha: 0.18 + Math.min(0.22, membrane.score || 0),
+            kind: "relational",
+            participants: membrane.participants || [],
+          });
+        }
+      }
+
+      function addMembraneSurface(group, options) {
+        if (group.length < 3) return;
+        const hull = hull2d(group);
+        if (hull.length < 3) return;
+        const center = hull.reduce((acc, [node]) => acc.add(new THREE.Vector3(...node.initial).multiplyScalar(1 / hull.length)), new THREE.Vector3());
+        const vertices = [];
+        for (let index = 0; index < hull.length; index++) {
+          const current = new THREE.Vector3(...hull[index][0].initial);
+          const next = new THREE.Vector3(...hull[(index + 1) % hull.length][0].initial);
+          vertices.push(center.x, center.y, center.z, current.x, current.y, current.z, next.x, next.y, next.z);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+        const color = new THREE.Color(rgb(options.color));
+        const material = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: Math.min(0.42, options.alpha),
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData = { ...options, nodeIndices: group.map(([, index]) => index), material, center: center.clone() };
+        root.add(mesh);
+        membraneObjects.push(mesh);
+
+        const edge = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(hull.map(([node]) => new THREE.Vector3(...node.initial))), new THREE.LineBasicMaterial({
+          color,
+          transparent: true,
+          opacity: options.kind === "collective" ? 0.78 : 0.48,
+        }));
+        edge.userData = mesh.userData;
+        root.add(edge);
+        membraneObjects.push(edge);
+      }
+
+      function drawPhysicsClouds() {
+        const sphere = new THREE.SphereGeometry(1, 12, 8);
+        for (const node of graph.nodes) {
+          const value = layerValue(node);
+          if (value < 0.34) continue;
+          const material = new THREE.MeshBasicMaterial({
+            color: 0x34d399,
+            transparent: true,
+            opacity: 0.025 + value * 0.045,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+          });
+          const cloud = new THREE.Mesh(sphere, material);
+          cloud.position.fromArray(node.initial || [0, 0, 0]);
+          cloud.scale.setScalar(9 + value * 24);
+          cloud.userData = { node, material };
+          root.add(cloud);
+          physicsObjects.push(cloud);
+        }
+      }
+
+      function bindControls() {
+        participantHost.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
+          input.checked ? selected.add(input.value) : selected.delete(input.value);
+          updateVisibility();
+        }));
+        layerHost.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
+          input.checked ? activeLayers.add(input.value) : activeLayers.delete(input.value);
+          updateLayerStyles();
+          updateVisibility();
+        }));
+        document.getElementById("all").onclick = () => {
+          selected = new Set(participants);
+          participantHost.querySelectorAll("input").forEach((input) => { input.checked = true; });
+          updateVisibility();
+        };
+        document.getElementById("none").onclick = () => {
+          selected = new Set();
+          participantHost.querySelectorAll("input").forEach((input) => { input.checked = false; });
+          updateVisibility();
+        };
+        window.addEventListener("resize", resize);
+        window.addEventListener("pointerdown", (event) => { dragging = true; lastX = event.clientX; lastY = event.clientY; });
+        window.addEventListener("pointerup", () => { dragging = false; });
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          camera.position.z = Math.max(220, Math.min(1500, camera.position.z + event.deltaY * 0.7));
+        }, { passive: false });
+        resize();
+      }
+
+      function onPointerMove(event) {
+        pointer.x = (event.clientX / innerWidth) * 2 - 1;
+        pointer.y = -(event.clientY / innerHeight) * 2 + 1;
+        tooltip.style.left = `${event.clientX}px`;
+        tooltip.style.top = `${event.clientY}px`;
+        if (!dragging) return;
+        root.rotation.y += (event.clientX - lastX) * 0.006;
+        root.rotation.x = Math.max(-1.35, Math.min(1.35, root.rotation.x + (event.clientY - lastY) * 0.006));
+        lastX = event.clientX;
+        lastY = event.clientY;
+      }
+
+      function updateVisibility() {
+        for (const mesh of nodeObjects) mesh.visible = isVisible(mesh.userData.node);
+        for (const label of labelObjects) label.visible = isVisible(label.userData.node);
+        for (const cloud of physicsObjects) cloud.visible = isVisible(cloud.userData.node) && layerValue(cloud.userData.node) >= 0.34;
+        for (const line of linkObjects) line.visible = isVisible(line.userData.source) && isVisible(line.userData.target);
+        for (const membrane of membraneObjects) {
+          const data = membrane.userData;
+          if (data.kind === "personal") membrane.visible = selected.has(data.participant);
+          else if (data.kind === "relational") membrane.visible = data.participants.every((participant) => selected.has(participant));
+          else membrane.visible = true;
+        }
+        updateMeta();
+      }
+
+      function updateLayerStyles() {
+        for (const mesh of nodeObjects) {
+          const value = layerValue(mesh.userData.node);
+          const base = mesh.userData.baseScale;
+          mesh.scale.setScalar(base + value * 4);
+          mesh.material.emissiveIntensity = 0.14 + value * 0.36;
+        }
+        for (const cloud of physicsObjects) {
+          const value = layerValue(cloud.userData.node);
+          cloud.scale.setScalar(9 + value * 24);
+          cloud.material.opacity = value >= 0.34 ? 0.025 + value * 0.045 : 0;
+        }
+      }
+
+      function resize() {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+        renderer.setSize(innerWidth, innerHeight);
+      }
+
+      function animate(t = 0) {
+        const time = t * 0.001;
+        for (const mesh of membraneObjects) {
+          if (!mesh.isMesh) continue;
+          mesh.position.y = Math.sin(time * 1.4 + mesh.id * 0.17) * 2.2;
+          mesh.material.opacity = Math.max(0.06, mesh.userData.alpha * (0.76 + Math.sin(time * 1.2 + mesh.id) * 0.18));
+        }
+        for (const mesh of nodeObjects) {
+          const pulse = 1 + Math.sin(time * 2.1 + mesh.userData.index * 0.31) * 0.025;
+          mesh.scale.setScalar((mesh.userData.baseScale + layerValue(mesh.userData.node) * 4) * pulse);
+        }
+        for (const label of labelObjects) label.quaternion.copy(camera.quaternion);
+        updateHover();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      function updateHover() {
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(rayTargets.filter((object) => object.visible), false);
+        const hit = hits[0]?.object || null;
+        if (hit === hovered) return;
+        hovered = hit;
+        if (!hovered) {
+          tooltip.classList.remove("visible");
+          return;
+        }
+        const node = hovered.userData.node;
+        tooltip.innerHTML = tooltipHtml(node);
+        tooltip.classList.add("visible");
+      }
+
+      function updateMeta() {
+        const visibleCount = graph.nodes.filter((node) => isVisible(node)).length;
+        meta.innerHTML = [
+          `samples ${graph.shape.sampleNodes || graph.shape.samples}`,
+          `words ${graph.shape.uniqueWords || 0}`,
+          `checked ${selected.size}/${participants.length}`,
+          `visible ${visibleCount}`,
+        ].map((item) => `<span>${item}</span>`).join("");
+      }
+
+      function isVisible(node) {
+        return !node.participantId || selected.has(node.participantId);
+      }
+
+      function layerValue(node) {
+        if (!node.physics || !activeLayers.size) return 0;
+        let value = 0;
+        for (const layer of activeLayers) value = Math.max(value, Math.abs(Number(node.physics[layer] || 0)));
+        return value;
+      }
+
+      function shouldLabel(node) {
+        return node.nodeType === "word_anchor"
+          || node.nodeType === "void_region"
+          || node.showLabel
+          || node.wall
+          || node.membrane
+          || node.boundaryScore > 0.72
+          || node.residualScore > 0.78;
+      }
+
+      function makeLabelSprite(text, color, fontSize) {
+        const dpr = 2;
+        const safeText = String(text || "").slice(0, 18);
+        const measure = document.createElement("canvas").getContext("2d");
+        measure.font = `800 ${fontSize * dpr}px Inter, system-ui, sans-serif`;
+        const width = Math.ceil(Math.max(96, measure.measureText(safeText).width + 32));
+        const height = Math.ceil(fontSize * dpr + 24);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.font = `800 ${fontSize * dpr}px Inter, system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(2,6,23,0.54)";
+        roundRect(ctx, 4, 4, width - 8, height - 8, 8);
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.fillText(safeText, width / 2, height / 2 + 1);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false });
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(width / 3.6, height / 3.6, 1);
+        sprite.renderOrder = 1000;
+        return sprite;
+      }
+
+      function roundRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + width, y, x + width, y + height, radius);
+        ctx.arcTo(x + width, y + height, x, y + height, radius);
+        ctx.arcTo(x, y + height, x, y, radius);
+        ctx.arcTo(x, y, x + width, y, radius);
+        ctx.closePath();
+      }
+
+      function tooltipHtml(node) {
+        const physics = node.physics ? [
+          ["phase", node.physics.phaseField],
+          ["diffuse", node.physics.diffuseInterface],
+          ["rho", node.physics.rho],
+          ["cahn", node.physics.cahnHilliard],
+          ["level", node.physics.levelSet],
+          ["homology", node.physics.homology],
+        ].map(([label, value]) => `${label} ${Number(value || 0).toFixed(3)}`).join("<br>") : "";
+        const words = (node.alignedWords || []).slice(0, 4).map((item) => `${item.word} ${Number(item.overlapSeconds).toFixed(1)}s`).join("<br>");
+        const emotion = Object.entries(node.emotion || {}).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, score]) => `${name} ${Number(score).toFixed(3)}`).join("<br>");
+        return `
+          <strong>${node.label || ""}</strong>
+          <div>${node.participantId || ""}</div>
+          <div>${node.nodeType || ""}</div>
+          <div>field ${Number(node.fieldValue || 0).toFixed(3)} / energy ${Number(node.responseEnergy || 0).toFixed(4)}</div>
+          <div>boundary ${Number(node.boundaryScore || 0).toFixed(3)} / residual ${Number(node.residualScore || 0).toFixed(3)}</div>
+          ${words ? `<hr style="border:0;border-top:1px solid rgba(148,163,184,.3);margin:8px 0"><div>${words}</div>` : ""}
+          ${physics ? `<hr style="border:0;border-top:1px solid rgba(148,163,184,.3);margin:8px 0"><div>${physics}</div>` : ""}
+          ${emotion ? `<hr style="border:0;border-top:1px solid rgba(148,163,184,.3);margin:8px 0"><div>${emotion}</div>` : ""}
+        `;
+      }
+
+      function hull2d(group) {
+        const points = group.slice().sort(([a], [b]) => a.initial[0] === b.initial[0] ? a.initial[1] - b.initial[1] : a.initial[0] - b.initial[0]);
+        if (points.length <= 3) return points;
+        const cross = (o, a, b) => (a[0].initial[0] - o[0].initial[0]) * (b[0].initial[1] - o[0].initial[1]) - (a[0].initial[1] - o[0].initial[1]) * (b[0].initial[0] - o[0].initial[0]);
+        const lower = [];
+        for (const point of points) {
+          while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+          lower.push(point);
+        }
+        const upper = [];
+        for (let index = points.length - 1; index >= 0; index--) {
+          const point = points[index];
+          while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+          upper.push(point);
+        }
+        lower.pop();
+        upper.pop();
+        return lower.concat(upper);
+      }
+
+      function average(values) {
+        return values.length ? values.reduce((sum, value) => sum + Number(value || 0), 0) / values.length : 0;
+      }
+
+      function participantColor(index) {
+        return [[167,139,250],[244,114,182],[96,165,250],[52,211,153],[251,146,60],[250,204,21],[45,212,191]][index % 7];
+      }
+
+      function rgb(color) {
+        return `rgb(${color.join(",")})`;
+      }
+
+      function hexToRgb(hex) {
+        const clean = String(hex).replace("#", "");
+        if (clean.length !== 6) return [244, 114, 182];
+        return [parseInt(clean.slice(0, 2), 16), parseInt(clean.slice(2, 4), 16), parseInt(clean.slice(4, 6), 16)];
+      }
+    </script>
+  </body>
+</html>

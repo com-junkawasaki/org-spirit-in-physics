@@ -1,0 +1,36 @@
+[viewer]
+canonical = "canvas"
+canonical_path = "docs/hume-tensor-3d-viewer.html"
+graph_manifest = "manifests/hume-tensor-3d-samples.json"
+reason = "Canvas preserves word labels, membrane/boundary/void semantics, participant toggles, and cross-browser stability."
+
+[viewer.layers]
+default = ["phaseField", "rho"]
+available = ["phaseField", "diffuseInterface", "rho", "cahnHilliard", "levelSet", "homology"]
+spirit = ["field", "boundary", "residual", "time"]
+boundary = ["membrane", "wall", "void"]
+
+[viewer.experimental.kami_webgpu]
+path = "docs/hume-tensor-3d-viewer-kami.html"
+status = "experimental"
+notes = "Kept for KAMI/WebGPU adapter exploration; not canonical until it matches Canvas semantic visibility."
+
+[viewer.experimental.three_webgpu]
+path = "docs/hume-tensor-3d-viewer-three-webgpu.html"
+status = "experimental"
+notes = "Kept for Three.js WebGPU/WebGL renderer exploration; not canonical until browser stability and label readability match Canvas."
+
+[data]
+samples = 700
+participants = 7
+unique_words = 100
+nodes = 714
+links = 2551
+modalities = ["language", "prosody", "face", "burst"]
+
+[method]
+metric = "cosine distance over baseline-corrected modality x emotion response signatures"
+projection = "classical MDS over physiological response distance"
+field = "non-voluntary response energy"
+boundary = "local response-gradient and isolation"
+residual = "deviation from same-stimulus group response"

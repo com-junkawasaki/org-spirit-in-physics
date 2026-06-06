@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hume Tensor 3D Samples</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #050505;
+        color: #f8fafc;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      #scene {
+        position: fixed;
+        inset: 0;
+      }
+
+      .hud {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        width: min(420px, calc(100vw - 32px));
+        color: #f8fafc;
+        z-index: 2;
+        pointer-events: none;
+      }
+
+      .title {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0;
+        margin-bottom: 8px;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+
+      .meta span {
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(15, 23, 42, 0.58);
+        padding: 7px 9px;
+        border-radius: 6px;
+        backdrop-filter: blur(10px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .legend {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        display: grid;
+        gap: 8px;
+        font-size: 12px;
+        color: #cbd5e1;
+        z-index: 2;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        min-width: 116px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(15, 23, 42, 0.58);
+        padding: 7px 9px;
+        border-radius: 6px;
+        backdrop-filter: blur(10px);
+      }
+
+      .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        flex: 0 0 auto;
+      }
+
+      .tooltip {
+        position: fixed;
+        left: 0;
+        top: 0;
+        min-width: 220px;
+        max-width: 320px;
+        padding: 10px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        background: rgba(2, 6, 23, 0.86);
+        color: #f8fafc;
+        border-radius: 6px;
+        font-size: 12px;
+        line-height: 1.45;
+        transform: translate(12px, 12px);
+        pointer-events: none;
+        z-index: 3;
+        opacity: 0;
+        transition: opacity 120ms ease;
+        backdrop-filter: blur(12px);
+      }
+
+      .tooltip.visible {
+        opacity: 1;
+      }
+
+      .tooltip strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+
+      .status {
+        position: fixed;
+        left: 16px;
+        bottom: 14px;
+        color: #94a3b8;
+        font-size: 12px;
+        z-index: 2;
+      }
+
+      .controls {
+        position: fixed;
+        left: 16px;
+        top: 122px;
+        width: min(420px, calc(100vw - 32px));
+        display: grid;
+        gap: 6px;
+        z-index: 2;
+        color: #cbd5e1;
+        font-size: 12px;
+      }
+
+      .control-actions,
+      .participant-list,
+      .layer-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .control-actions button,
+      .participant-toggle {
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(15, 23, 42, 0.58);
+        color: #cbd5e1;
+        border-radius: 6px;
+        backdrop-filter: blur(10px);
+      }
+
+      .control-actions button {
+        padding: 6px 9px;
+        cursor: pointer;
+      }
+
+      .participant-toggle,
+      .layer-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+
+      .participant-toggle input,
+      .layer-toggle input {
+        accent-color: #22d3ee;
+      }
+
+      @media (max-width: 720px) {
+        .hud {
+          top: 12px;
+          left: 12px;
+          width: calc(100vw - 24px);
+        }
+
+        .meta {
+          grid-template-columns: 1fr;
+        }
+
+        .legend {
+          right: 12px;
+          top: auto;
+          bottom: 40px;
+        }
+
+        .controls {
+          top: 168px;
+          left: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div class="hud">
+      <div class="title" id="title">Hume Tensor 3D Samples</div>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="controls">
+      <div class="control-actions">
+        <button id="selectAll" type="button">all</button>
+        <button id="selectNone" type="button">none</button>
+      </div>
+      <div class="participant-list" id="participantList"></div>
+      <div class="layer-list" id="layerList"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#7dd3fc"></span>body-distance edge</div>
+      <div class="legend-item"><span class="swatch" style="background:#facc15"></span>same stimulus</div>
+      <div class="legend-item"><span class="swatch" style="background:#34d399"></span>time trace</div>
+      <div class="legend-item"><span class="swatch" style="background:#a78bfa"></span>personal membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#22d3ee"></span>collective membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#f472b6"></span>relational membrane</div>
+      <div class="legend-item"><span class="swatch" style="background:#ef4444"></span>wall</div>
+      <div class="legend-item"><span class="swatch" style="background:#0f766e"></span>void</div>
+      <div class="legend-item"><span class="swatch" style="background:#7c3aed"></span>language</div>
+      <div class="legend-item"><span class="swatch" style="background:#0ea5e9"></span>prosody</div>
+      <div class="legend-item"><span class="swatch" style="background:#f97316"></span>face</div>
+      <div class="legend-item"><span class="swatch" style="background:#22c55e"></span>burst</div>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="status">drag rotate / wheel zoom / hover inspect</div>
+
+    <script>
+      const canvas = document.getElementById("scene");
+      const ctx = canvas.getContext("2d");
+      const tooltip = document.getElementById("tooltip");
+      const meta = document.getElementById("meta");
+      const participantList = document.getElementById("participantList");
+      const layerList = document.getElementById("layerList");
+
+      let graph = null;
+      let participants = [];
+      let selectedParticipants = new Set();
+      const activeLayers = new Set(["phaseField", "rho"]);
+      let width = 0;
+      let height = 0;
+      let scale = 2.1;
+      let rotX = -0.56;
+      let rotY = 0.62;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      let pointerX = -9999;
+      let pointerY = -9999;
+      let projectedNodes = [];
+      let hoveredNode = null;
+      let animationStarted = false;
+      let phase = 0;
+
+      fetch("../manifests/hume-tensor-3d-samples.json").then((response) => {
+        if (!response.ok) throw new Error(`Failed to load sample graph: ${response.status}`);
+        return response.json();
+      }).then((loaded) => {
+        graph = loaded;
+        participants = Array.from(new Set(graph.nodes.map((node) => node.participantId).filter(Boolean))).sort();
+        selectedParticipants = new Set(participants);
+        buildParticipantControls();
+        buildLayerControls();
+        document.getElementById("title").textContent = graph.title || "Hume Tensor 3D Samples";
+        updateMeta();
+        startAnimation();
+      }).catch((error) => {
+        meta.innerHTML = `<span>${error.message}</span>`;
+      });
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw();
+      }
+
+      function buildParticipantControls() {
+        participantList.innerHTML = participants.map((participant, index) => `
+          <label class="participant-toggle" title="${participant}">
+            <input type="checkbox" value="${participant}" checked>
+            <span style="color: rgb(${participantColor(index).join(",")})">${participant.slice(0, 8)}</span>
+          </label>
+        `).join("");
+        participantList.querySelectorAll("input").forEach((input) => {
+          input.addEventListener("change", () => {
+            if (input.checked) selectedParticipants.add(input.value);
+            else selectedParticipants.delete(input.value);
+            updateMeta();
+          });
+        });
+        document.getElementById("selectAll").addEventListener("click", () => {
+          selectedParticipants = new Set(participants);
+          participantList.querySelectorAll("input").forEach((input) => { input.checked = true; });
+          updateMeta();
+        });
+        document.getElementById("selectNone").addEventListener("click", () => {
+          selectedParticipants = new Set();
+          participantList.querySelectorAll("input").forEach((input) => { input.checked = false; });
+          updateMeta();
+        });
+      }
+
+      function updateMeta() {
+        if (!graph) return;
+        const visibleNodes = graph.nodes.filter((node) => isParticipantVisible(node)).length;
+        meta.innerHTML = [
+          `samples ${graph.shape.sampleNodes || graph.shape.samples}`,
+          `words ${graph.shape.uniqueWords || graph.shape.wordAnchors || 0}`,
+          `checked ${selectedParticipants.size}/${participants.length}`,
+          `visible ${visibleNodes}`,
+        ].map((item) => `<span>${item}</span>`).join("");
+      }
+
+      function buildLayerControls() {
+        const layers = [
+          ["phaseField", "phase-field", "#22d3ee"],
+          ["diffuseInterface", "diffuse", "#a78bfa"],
+          ["rho", "rho", "#34d399"],
+          ["cahnHilliard", "cahn", "#facc15"],
+          ["levelSet", "level-set", "#60a5fa"],
+          ["homology", "homology", "#f472b6"],
+        ];
+        layerList.innerHTML = layers.map(([key, label, color]) => `
+          <label class="layer-toggle">
+            <input type="checkbox" value="${key}" ${activeLayers.has(key) ? "checked" : ""}>
+            <span style="color:${color}">${label}</span>
+          </label>
+        `).join("");
+        layerList.querySelectorAll("input").forEach((input) => {
+          input.addEventListener("change", () => {
+            if (input.checked) activeLayers.add(input.value);
+            else activeLayers.delete(input.value);
+          });
+        });
+      }
+
+      function isParticipantVisible(node) {
+        if (!node || !node.participantId) return true;
+        return selectedParticipants.has(node.participantId);
+      }
+
+      function formatTopEmotion(node) {
+        return Object.entries(node.emotion || {})
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, score]) => `${name} ${Number(score).toFixed(3)}`)
+          .join("<br>");
+      }
+
+      function formatAlignedWords(node) {
+        const words = node.alignedWords || [];
+        if (!words.length) return "";
+        return words
+          .slice(0, 4)
+          .map((item) => `${item.word} ${Number(item.overlapSeconds).toFixed(1)}s`)
+          .join("<br>");
+      }
+
+      function formatPhysics(node) {
+        const physics = node.physics;
+        if (!physics) return "";
+        return [
+          ["phase", physics.phaseField],
+          ["diffuse", physics.diffuseInterface],
+          ["rho", physics.rho],
+          ["cahn", physics.cahnHilliard],
+          ["level", physics.levelSet],
+          ["homology", physics.homology],
+        ].map(([label, value]) => `${label} ${Number(value || 0).toFixed(3)}`).join("<br>");
+      }
+
+      function rotatePoint([x, y, z]) {
+        const cy = Math.cos(rotY);
+        const sy = Math.sin(rotY);
+        const cx = Math.cos(rotX);
+        const sx = Math.sin(rotX);
+        const x1 = x * cy - z * sy;
+        const z1 = x * sy + z * cy;
+        const y1 = y * cx - z1 * sx;
+        const z2 = y * sx + z1 * cx;
+        return [x1, y1, z2];
+      }
+
+      function project(point) {
+        const [x, y, z] = rotatePoint(point);
+        const cameraDistance = 720;
+        const perspective = cameraDistance / (cameraDistance + z);
+        return {
+          x: width * 0.5 + x * scale * perspective,
+          y: height * 0.53 - y * scale * perspective,
+          z,
+          perspective,
+        };
+      }
+
+      function drawGrid() {
+        ctx.save();
+        ctx.strokeStyle = "rgba(30, 41, 59, 0.42)";
+        ctx.lineWidth = 1;
+        for (let i = -6; i <= 6; i++) {
+          const a = project([i * 50, -150, -320]);
+          const b = project([i * 50, -150, 320]);
+          const c = project([-320, -150, i * 50]);
+          const d = project([320, -150, i * 50]);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.moveTo(c.x, c.y);
+          ctx.lineTo(d.x, d.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#050505";
+        ctx.fillRect(0, 0, width, height);
+        if (!graph) return;
+
+        drawGrid();
+
+        projectedNodes = graph.nodes.map((node, index) => ({
+          ...project(node.initial),
+          node,
+          index,
+          visible: isParticipantVisible(node),
+          radius: Math.max(3.2, Math.min(8.5, (node.scale || 1) * 3.0)),
+        }));
+
+        drawLiquidMembrane();
+        drawPhysicsLayers();
+
+        for (const link of graph.links) {
+          const source = projectedNodes[link.source];
+          const target = projectedNodes[link.target];
+          if (!source || !target) continue;
+          if (!source.visible || !target.visible) continue;
+          ctx.strokeStyle = link.temporal
+            ? "rgba(250, 204, 21, 0.42)"
+            : link.mode === "time_trace"
+              ? "rgba(52, 211, 153, 0.26)"
+            : link.mode === "same_stimulus"
+              ? "rgba(250, 204, 21, 0.34)"
+            : link.mode === "body_distance"
+              ? "rgba(125, 211, 252, 0.22)"
+            : link.anchorType === "emotion"
+              ? "rgba(245, 158, 11, 0.3)"
+            : link.anchorType === "word"
+              ? "rgba(226, 232, 240, 0.18)"
+            : link.mode === "tension"
+              ? "rgba(125, 211, 252, 0.34)"
+              : "rgba(100, 116, 139, 0.18)";
+          ctx.lineWidth = link.temporal ? 1.4 : (link.mode === "anchor" ? 0.8 + link.weight * 1.8 : link.mode === "same_stimulus" ? 1.1 : link.mode === "time_trace" ? 0.95 : 0.7);
+          ctx.beginPath();
+          ctx.moveTo(source.x, source.y);
+          ctx.lineTo(target.x, target.y);
+          ctx.stroke();
+        }
+
+        const sorted = [...projectedNodes].sort((a, b) => a.z - b.z);
+        for (const item of sorted) {
+          const node = item.node;
+          if (!item.visible) continue;
+          const isEmotionAnchor = node.nodeType === "emotion_anchor";
+          const isWordAnchor = node.nodeType === "word_anchor";
+          const isVoid = node.nodeType === "void_region";
+          const radius = (isEmotionAnchor ? 8.8 : isWordAnchor ? 4.8 : item.radius) * item.perspective;
+          if ((node.boundary && !node.membrane) || node.wall || isVoid) {
+            ctx.save();
+            ctx.globalAlpha = isVoid ? 0.46 : 0.72;
+            ctx.strokeStyle = node.wall ? "#ef4444" : isVoid ? "#0f766e" : "#a78bfa";
+            ctx.lineWidth = node.wall ? 2.4 : 1.2;
+            ctx.beginPath();
+            ctx.arc(item.x, item.y, radius + (node.wall ? 8 : 3), 0, Math.PI * 2);
+            ctx.stroke();
+            if (isVoid) {
+              ctx.setLineDash([4, 5]);
+              ctx.beginPath();
+              ctx.arc(item.x, item.y, radius + 12, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+          if (node.membrane) {
+            drawMembraneNode(item, radius);
+          }
+          const gradient = ctx.createRadialGradient(
+            item.x - radius * 0.35,
+            item.y - radius * 0.45,
+            radius * 0.1,
+            item.x,
+            item.y,
+            radius * 1.45,
+          );
+          gradient.addColorStop(0, isVoid ? "#5eead4" : isWordAnchor ? "#ffffff" : "#fed7aa");
+          gradient.addColorStop(0.32, node.color || "#f97316");
+          gradient.addColorStop(1, isVoid ? "#042f2e" : isWordAnchor ? "#64748b" : "#7c2d12");
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(item.x, item.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isEmotionAnchor || isWordAnchor || isVoid || node.showLabel || item === hoveredNode) {
+            ctx.font = isEmotionAnchor ? "800 12px Inter, system-ui, sans-serif" : "700 10px Inter, system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillStyle = item === hoveredNode ? "#f8fafc" : node.color || "#f97316";
+            ctx.fillText(node.label, item.x, item.y - radius - 4);
+          }
+        }
+
+        updateHover();
+      }
+
+      function drawLiquidMembrane() {
+        const collectiveMembrane = projectedNodes
+          .filter((item) => item.visible && item.node.collectiveMembrane)
+          .sort((a, b) => a.z - b.z);
+        const personalGroups = new Map();
+        for (const item of projectedNodes.filter((entry) => entry.visible && entry.node.personalMembrane)) {
+          const key = item.node.participantId || "unknown";
+          if (!personalGroups.has(key)) personalGroups.set(key, []);
+          personalGroups.get(key).push(item);
+        }
+        const membrane = projectedNodes
+          .filter((item) => item.visible && item.node.membrane)
+          .sort((a, b) => a.z - b.z);
+        if (membrane.length < 2) return;
+
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        let groupIndex = 0;
+        for (const group of personalGroups.values()) {
+          const strength = average(group.map((item) => item.node.boundaryScore || 0));
+          drawMembraneSurface(group, {
+            color: participantColor(groupIndex),
+            alpha: 0.12 + strength * 0.28,
+            edgeAlpha: 0.18 + strength * 0.36,
+            wave: 7,
+            ripple: false,
+            strength,
+          });
+          groupIndex += 1;
+        }
+        const collectiveStrength = average(collectiveMembrane.map((item) => item.node.boundaryScore || 0));
+        drawMembraneSurface(collectiveMembrane, {
+          color: [34, 211, 238],
+          alpha: 0.36 + collectiveStrength * 0.48,
+          edgeAlpha: 0.34 + collectiveStrength * 0.44,
+          wave: 11,
+          ripple: true,
+          strength: collectiveStrength,
+        });
+        drawRelationalMembranes();
+        for (const link of graph.links) {
+          const source = projectedNodes[link.source];
+          const target = projectedNodes[link.target];
+          if (!source || !target) continue;
+          if (!source.visible || !target.visible) continue;
+          if (!source.node.membrane && !target.node.membrane) continue;
+          const dx = target.x - source.x;
+          const dy = target.y - source.y;
+          const length = Math.hypot(dx, dy);
+          if (length > 180) continue;
+          const normalX = -dy / Math.max(1, length);
+          const normalY = dx / Math.max(1, length);
+          const wave = Math.sin(phase * 1.7 + source.index * 0.37 + target.index * 0.19) * 14;
+          const cx = (source.x + target.x) * 0.5 + normalX * wave;
+          const cy = (source.y + target.y) * 0.5 + normalY * wave;
+          const alpha = 0.025 + 0.075 * Math.max(source.node.boundaryScore || 0, target.node.boundaryScore || 0);
+
+          const gradient = ctx.createLinearGradient(source.x, source.y, target.x, target.y);
+          gradient.addColorStop(0, `rgba(34, 211, 238, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(45, 212, 191, ${alpha + 0.035})`);
+          gradient.addColorStop(1, `rgba(125, 211, 252, ${alpha})`);
+
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 4.0 + 5.0 * Math.max(source.node.boundaryScore || 0, target.node.boundaryScore || 0);
+          ctx.beginPath();
+          ctx.moveTo(source.x, source.y);
+          ctx.quadraticCurveTo(cx, cy, target.x, target.y);
+          ctx.stroke();
+        }
+
+        for (const item of membrane) {
+          const pulse = 0.5 + 0.5 * Math.sin(phase * 2.3 + item.index * 0.41);
+          const radius = (item.radius + 12 + pulse * 8) * item.perspective;
+          const gradient = ctx.createRadialGradient(item.x, item.y, 0, item.x, item.y, radius);
+          gradient.addColorStop(0, "rgba(34, 211, 238, 0.18)");
+          gradient.addColorStop(0.48, "rgba(45, 212, 191, 0.08)");
+          gradient.addColorStop(1, "rgba(34, 211, 238, 0)");
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(item.x, item.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawPhysicsLayers() {
+        if (!activeLayers.size) return;
+        const layerStyles = {
+          phaseField: { color: [34, 211, 238], radius: 38, alpha: 0.18 },
+          diffuseInterface: { color: [167, 139, 250], radius: 46, alpha: 0.15 },
+          rho: { color: [52, 211, 153], radius: 34, alpha: 0.16 },
+          cahnHilliard: { color: [250, 204, 21], radius: 32, alpha: 0.15 },
+          levelSet: { color: [96, 165, 250], radius: 28, alpha: 0.14 },
+          homology: { color: [244, 114, 182], radius: 40, alpha: 0.17 },
+        };
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        for (const item of projectedNodes) {
+          if (!item.visible || !item.node.physics) continue;
+          for (const layer of activeLayers) {
+            const style = layerStyles[layer];
+            if (!style) continue;
+            let value = Number(item.node.physics[layer] || 0);
+            if (layer === "levelSet") value = Math.abs(value);
+            if (value < 0.28) continue;
+            const pulse = 0.75 + 0.25 * Math.sin(phase * 2 + item.index * 0.31);
+            const radius = (style.radius + value * 42) * item.perspective * pulse;
+            const [r, g, b] = style.color;
+            const gradient = ctx.createRadialGradient(item.x, item.y, 0, item.x, item.y, radius);
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${style.alpha * value})`);
+            gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${style.alpha * value * 0.42})`);
+            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(item.x, item.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            if (layer === "levelSet" || layer === "homology") {
+              ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.15 + value * 0.32})`;
+              ctx.lineWidth = 0.8 + value * 1.4;
+              ctx.beginPath();
+              ctx.arc(item.x, item.y, item.radius + 5 + value * 10, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawRelationalMembranes() {
+        const membranes = graph.relationalMembranes || [];
+        membranes.forEach((membrane, index) => {
+          const selectedPair = (membrane.participants || []).every((participant) => selectedParticipants.has(participant));
+          if (!selectedPair) return;
+          const group = (membrane.nodeIndices || [])
+            .map((nodeIndex) => projectedNodes[nodeIndex])
+            .filter((item) => item && item.visible);
+          if (group.length < 3) return;
+          const strength = Math.max(0.05, Math.min(1, membrane.score || 0));
+          drawMembraneSurface(group, {
+            color: hexToRgb(membrane.color || "#f472b6"),
+            alpha: 0.24 + strength * 0.72,
+            edgeAlpha: 0.38 + strength * 0.58,
+            wave: 9 + index,
+            ripple: true,
+            label: membrane.label,
+            strength,
+          });
+        });
+      }
+
+      function drawMembraneSurface(membrane, options = {}) {
+        const hull = convexHull(membrane);
+        if (hull.length < 3) return;
+        const color = options.color || [34, 211, 238];
+        const alpha = options.alpha ?? 0.9;
+        const edgeAlpha = options.edgeAlpha ?? 0.62;
+        const waveAmount = options.wave ?? 10;
+        const ripple = options.ripple ?? true;
+        const strength = options.strength ?? 0.5;
+        const center = hull.reduce((acc, item) => ({
+          x: acc.x + item.x / hull.length,
+          y: acc.y + item.y / hull.length,
+        }), { x: 0, y: 0 });
+        const waved = hull.map((item, index) => {
+          const dx = item.x - center.x;
+          const dy = item.y - center.y;
+          const length = Math.max(1, Math.hypot(dx, dy));
+          const wave = Math.sin(phase * 1.45 + index * 0.9 + item.index * 0.13) * waveAmount;
+          return {
+            ...item,
+            x: item.x + (dx / length) * wave,
+            y: item.y + (dy / length) * wave,
+          };
+        });
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const fill = ctx.createRadialGradient(center.x, center.y, 8, center.x, center.y, Math.max(width, height) * 0.42);
+        fill.addColorStop(0, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.24)`);
+        fill.addColorStop(0.56, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.13)`);
+        fill.addColorStop(1, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.035)`);
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        waved.forEach((item, index) => {
+          const next = waved[(index + 1) % waved.length];
+          const midX = (item.x + next.x) * 0.5;
+          const midY = (item.y + next.y) * 0.5;
+          if (index === 0) ctx.moveTo(midX, midY);
+          ctx.quadraticCurveTo(next.x, next.y, (next.x + waved[(index + 2) % waved.length].x) * 0.5, (next.y + waved[(index + 2) % waved.length].y) * 0.5);
+        });
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${edgeAlpha})`;
+        ctx.lineWidth = 1.2 + strength * 3.4;
+        ctx.stroke();
+
+        drawMembraneCloud(waved, center, color, strength);
+
+        if (!ripple) {
+          ctx.restore();
+          return;
+        }
+        ctx.globalAlpha = 0.58;
+        for (let index = 0; index < waved.length; index += 2) {
+          const item = waved[index];
+          const opposite = waved[(index + Math.floor(waved.length / 2)) % waved.length];
+          const ripple = Math.sin(phase * 2 + index * 0.7) * 12;
+          ctx.strokeStyle = "rgba(125, 211, 252, 0.11)";
+          ctx.lineWidth = 0.6 + strength * 1.8;
+          ctx.beginPath();
+          ctx.moveTo(item.x, item.y);
+          ctx.quadraticCurveTo(center.x + ripple, center.y - ripple, opposite.x, opposite.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawMembraneCloud(points, center, color, strength) {
+        ctx.save();
+        ctx.globalAlpha = 0.18 + strength * 0.22;
+        for (let index = 0; index < points.length; index += 1) {
+          const item = points[index];
+          const drift = Math.sin(phase * 1.1 + index * 0.8) * 10;
+          const x = item.x * 0.92 + center.x * 0.08 + drift;
+          const y = item.y * 0.92 + center.y * 0.08 - drift * 0.45;
+          const radius = 22 + strength * 42 + (index % 3) * 9;
+          const cloud = ctx.createRadialGradient(x, y, 0, x, y, radius);
+          cloud.addColorStop(0, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${0.10 + strength * 0.12})`);
+          cloud.addColorStop(0.55, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${0.035 + strength * 0.045})`);
+          cloud.addColorStop(1, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0)`);
+          ctx.fillStyle = cloud;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function participantColor(index) {
+        const palette = [
+          [167, 139, 250],
+          [244, 114, 182],
+          [96, 165, 250],
+          [52, 211, 153],
+          [251, 146, 60],
+          [250, 204, 21],
+          [45, 212, 191],
+        ];
+        return palette[index % palette.length];
+      }
+
+      function average(values) {
+        if (!values.length) return 0;
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      }
+
+      function hexToRgb(hex) {
+        const clean = String(hex).replace("#", "");
+        if (clean.length !== 6) return [244, 114, 182];
+        return [
+          parseInt(clean.slice(0, 2), 16),
+          parseInt(clean.slice(2, 4), 16),
+          parseInt(clean.slice(4, 6), 16),
+        ];
+      }
+
+      function convexHull(items) {
+        const points = [...items].sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+        if (points.length <= 3) return points;
+        const cross = (origin, a, b) => (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x);
+        const lower = [];
+        for (const point of points) {
+          while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+          lower.push(point);
+        }
+        const upper = [];
+        for (let index = points.length - 1; index >= 0; index -= 1) {
+          const point = points[index];
+          while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+          upper.push(point);
+        }
+        lower.pop();
+        upper.pop();
+        return lower.concat(upper);
+      }
+
+      function drawMembraneNode(item, radius) {
+        const pulse = Math.sin(phase * 2.6 + item.index * 0.53);
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.strokeStyle = "rgba(34, 211, 238, 0.72)";
+        ctx.lineWidth = 1.2 + (pulse + 1) * 0.55;
+        ctx.beginPath();
+        for (let step = 0; step <= 48; step += 1) {
+          const angle = (Math.PI * 2 * step) / 48;
+          const ripple = Math.sin(angle * 5 + phase * 3.2 + item.index) * 2.4;
+          const r = radius + 6 + ripple + pulse * 2;
+          const x = item.x + Math.cos(angle) * r;
+          const y = item.y + Math.sin(angle) * r;
+          if (step === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function startAnimation() {
+        if (animationStarted) return;
+        animationStarted = true;
+        const tick = () => {
+          phase += 0.018;
+          draw();
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+
+      function updateHover() {
+        if (!graph) return;
+        let best = null;
+        for (const item of projectedNodes) {
+          if (!item.visible) continue;
+          const dx = pointerX - item.x;
+          const dy = pointerY - item.y;
+          const d = Math.hypot(dx, dy);
+          if (d <= Math.max(9, item.radius + 3) && (!best || item.z > best.z)) {
+            best = item;
+          }
+        }
+        hoveredNode = best;
+        if (!best) {
+          tooltip.classList.remove("visible");
+          return;
+        }
+        const node = best.node;
+        const [t0, t1] = node.timeRange || [0, 0];
+        const anchorInfo = node.nodeType === "emotion_anchor"
+          ? "<div>emotion anchor</div>"
+          : node.nodeType === "word_anchor"
+            ? `<div>word anchor</div><div>${node.source || ""}</div>`
+            : node.nodeType === "physiological_word_signature"
+              ? `<div>body-response distance node</div><div>field ${Number(node.fieldValue || 0).toFixed(3)} / energy ${Number(node.responseEnergy || 0).toFixed(4)}</div><div>boundary ${Number(node.boundaryScore || 0).toFixed(3)} / residual ${Number(node.residualScore || 0).toFixed(3)}</div><div>void ${Number(node.voidScore || 0).toFixed(3)} / overlap ${Number(node.overlapSeconds || 0).toFixed(1)}s</div>`
+            : node.nodeType === "void_region"
+              ? `<div>void region</div><div>boundary ${Number(node.boundaryScore || 0).toFixed(3)}</div><div>residual ${Number(node.residualScore || 0).toFixed(3)}</div><div>void ${Number(node.voidScore || 0).toFixed(3)}</div>`
+              : `<div>${Number(t0).toFixed(0)}-${Number(t1).toFixed(0)}s</div>`;
+        const words = formatAlignedWords(node);
+        const physics = formatPhysics(node);
+        tooltip.innerHTML = `
+          <strong>${node.label}</strong>
+          <div>${node.participantId || ""}</div>
+          <div>${node.sessionLikeId || ""}</div>
+          ${anchorInfo}
+          ${words ? `<hr style="border:0;border-top:1px solid rgba(148,163,184,.3);margin:8px 0"><div>${words}</div>` : ""}
+          ${physics ? `<hr style="border:0;border-top:1px solid rgba(148,163,184,.3);margin:8px 0"><div>${physics}</div>` : ""}
+          <hr style="border:0;border-top:1px solid rgba(148,163,184,.3);margin:8px 0">
+          <div>${formatTopEmotion(node)}</div>
+        `;
+        tooltip.classList.add("visible");
+      }
+
+      function onPointerMove(event) {
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        tooltip.style.left = `${event.clientX}px`;
+        tooltip.style.top = `${event.clientY}px`;
+        if (dragging) {
+          const dx = event.clientX - lastX;
+          const dy = event.clientY - lastY;
+          rotY += dx * 0.006;
+          rotX += dy * 0.006;
+          rotX = Math.max(-1.35, Math.min(1.35, rotX));
+          lastX = event.clientX;
+          lastY = event.clientY;
+        }
+      }
+
+      function onPointerDown(event) {
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+      }
+
+      function onPointerUp() {
+        dragging = false;
+      }
+
+      function onWheel(event) {
+        event.preventDefault();
+        scale += -event.deltaY * 0.002;
+        scale = Math.max(0.35, Math.min(5.4, scale));
+      }
+
+      window.addEventListener("resize", resize);
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerdown", onPointerDown);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("wheel", onWheel, { passive: false });
+      resize();
+    </script>
+  </body>
+</html>

@@ -27,7 +27,7 @@
 \maketitle
 
 \begin{abstract}
-Philosophical accounts often invoke ``spirit'' as a non-material essence, yet have lacked an operational definition compatible with physics. Here we introduce Spirit as a thermodynamic information quantity defined on a high-dimensional manifold that couples linguistic, behavioural and physiological signals. This paper presents a theoretical framework based on three core assumptions: (1) Information is thermodynamic, (2) Spirituality is information, and (3) Spirit operates as an open thermodynamic system. We provide a model for interpreting its internal structures and an experimental methodology for its measurement.
+Philosophical accounts often invoke ``spirit'' as a non-material essence, yet have lacked an operational definition compatible with physics. Here we introduce Spirit as a thermodynamic information quantity defined on a high-dimensional tensor field that couples linguistic, behavioural, physiological, affective, and temporal signals. This paper presents a theoretical framework based on three core assumptions: (1) Information is thermodynamic, (2) Spirituality is information, and (3) Spirit operates as an open thermodynamic system. We reinterpret the Rubber Hand Illusion as a reference phenomenon for information-induced self-boundary update, and propose a scalable Web-based Jungian word association protocol as a proxy for estimating the boundary at which external information becomes physiologically active for a person. We provide a tensor-first model, a geometry/topology pipeline, and an experimental methodology for measurement.
 \end{abstract}
 
 \section{Introduction}
@@ -50,22 +50,48 @@ Thus, ``Spirit'' as an informational entity must obey these thermodynamic constr
 We define ``Spirituality'' or the ``Self'' as a high-dimensional informational structure rather than a non-material essence.
 The \textbf{Rubber Hand Illusion} \cite{Botvinick1998} demonstrates that the self-boundary is a malleable informational construct, not a fixed physical limit.
 Similarly, \textbf{Jung's Word Association} experiments \cite{Jung1910} reveal that the psyche is structured into ``complexes''---clusters of information with measurable reaction times and emotional charges.
-These findings imply that spiritual states can be mapped as vectors in an informational space.
+These findings imply that spiritual states can be mapped as structured information. In the first version of this model, the mapping was described as a vector space. In the present formulation, the vector representation is treated as a projection of a higher-order tensor field.
 
 \subsection{Assumption 3: Spirit as Open System Information Thermodynamics}
 The Spirit is modeled as an open thermodynamic system that constantly exchanges information and entropy with its environment \cite{Schrodinger1944}.
 According to the \textbf{Free Energy Principle} proposed by \textbf{Friston (2010)}, biological agents minimize their free energy, which is equivalent to minimizing ``surprise'' (informational entropy) to maintain their structural integrity against the Second Law of Thermodynamics \cite{Friston2010}.
-We formalize this as a state vector $S$ in a complex space, where the energy potential $E$ corresponds to this surprisal:
+We formalize this as a state $S$ in an informational tensor field, where the energy potential $E$ corresponds to surprisal:
 \begin{equation}
-    E = -\ln P(w_O | w_I) \quad (\text{Surprisal})
+    E(w_I,w_O) = -\ln P(w_O | w_I, B, C) \quad (\text{Surprisal})
 \end{equation}
 \begin{equation}
-    S = \{V, E, T\}
+    S = \{X, E, T, \mathcal{G}\}
 \end{equation}
+where $B$ denotes body-state observations, $C$ denotes session and environmental context, $X$ is the observed tensor field, and $\mathcal{G}$ is the induced geometry/topology of the response manifold.
 \begin{equation}
     \frac{dS}{dt} = \frac{dS_{\text{internal}}}{dt} + \frac{dS_{\text{exchange}}}{dt}
 \end{equation}
 Here, the Spirit maintains its order (negative entropy) by processing information inputs ($w_I$) and generating outputs ($w_O$) that minimize the divergence between its internal model and external reality. Recent developments in non-equilibrium thermodynamics \cite{Seifert2012,Parrondo2015} and feedback control \cite{SagawaUeda2010} further support this formulation.
+
+\subsection{Tensor Field Representation}
+The canonical observation is a multi-way tensor:
+\begin{equation}
+    X[p,s,w,m,f,t],
+\end{equation}
+where $p$ indexes participant, $s$ indexes session or context, $w$ indexes the stimulus-response word pair, $m$ indexes measurement modality, $f$ indexes feature, and $t$ indexes time window. Modalities include language, reaction time, voice, facial expression, skin potential, heart-rate variability, pupil response, and motion when available. Features include semantic score, latency, amplitude, emotion score, arousal, uncertainty, entropy, and other normalized descriptors.
+
+The participant-specific Spirit state is therefore:
+\begin{equation}
+    S_p(t) = X[p,:,:,:,:,t].
+\end{equation}
+The previous word vector representation is retained as a projection:
+\begin{equation}
+    \vec{v}_w = \Pi\left(X[p,:,w,:,:,:]\right),
+\end{equation}
+where $\Pi$ denotes a projection from the tensor field to a word-level embedding used for visualization or downstream graph construction.
+
+\subsection{Tensor Contraction Probability Model}
+The original association model used the inner product of word vectors, inverse reaction time, skin potential, and emotional expression. The tensor-first model generalizes this by defining association probability through contraction over semantic, physiological, affective, and contextual modes:
+\begin{equation}
+ P(w_O | w_I, B, C) =
+ \frac{\exp\left(\mathcal{C}(X_{\text{lang}},X_{\text{body}},X_{\text{affect}},X_{\text{context}})\right)}{Z},
+\end{equation}
+where $\mathcal{C}(\cdot)$ is a learned or estimated tensor contraction and $Z$ is the normalizing partition function. The vector model is recovered when $\mathcal{C}$ is restricted to a semantic inner product plus scalar physiological factors.
 
 \section{Structural Interpretation}
 While the physical framework allows us to define and measure the Spirit manifold, understanding its internal structure requires an interpretative model. We use the concepts of analytical psychology as a model to interpret the physical structures we measure.
@@ -76,13 +102,34 @@ While the physical framework allows us to define and measure the Spirit manifold
 \end{itemize}
 
 \section{Measurement Methodology}
-We use a modified version of the Word Association Experiment to probe the structure of this space. The probability of association $P(w_O | w_I)$ is modeled to include semantic, behavioural, and physiological components:
+We use a modified version of the Word Association Experiment to probe the structure of this tensor field. The Rubber Hand Illusion is treated as a reference experiment: it demonstrates that external information can update the self-boundary when multisensory evidence is coherent. Because large-scale Rubber Hand Illusion experiments are costly, the Web-based word association protocol is used as a scalable proxy for estimating where external information begins to trigger coordinated physiological response.
+
+The probability of association $P(w_O | w_I,B,C)$ is modeled to include semantic, behavioural, physiological, affective, and contextual components:
 
 \begin{equation}
- P(w_O | w_I) = \frac{\exp(\vec{w_I} \cdot \vec{w_O}) \cdot [r(w_I, w_O)]^{\alpha} \cdot \exp(\gamma \frac{\Delta SP}{\lambda}) \cdot \exp(\eta F)}{Z}
+ P(w_O | w_I,B,C) =
+ \frac{
+ \exp(\mathcal{C}(X_{\text{lang}},X_{\text{body}},X_{\text{affect}},X_{\text{context}}))
+ \cdot [r(w_I, w_O)]^{\alpha}
+ \cdot \exp(\gamma \frac{\Delta SP}{\lambda})
+ \cdot \exp(\eta F)
+ }{Z}
 \end{equation}
 
 where $r$ is the inverse reaction time, $\Delta SP$ is skin potential arousal, and $F$ is emotional expression.
+
+\subsection{Computational Pipeline}
+The computational method consists of five complementary analyses.
+
+\begin{enumerate}
+    \item \textbf{Tensor decomposition.} CP, Tucker, or Tensor Train decomposition \cite{KoldaBader2009,Oseledets2011} extracts latent Spirit factors that couple word groups, modalities, affective states, and temporal dynamics.
+    \item \textbf{Information geometry.} Participant responses are treated as conditional probability distributions, and Fisher information or related metrics \cite{Amari2016} estimate the local curvature of the response manifold.
+    \item \textbf{Persistent homology.} Stable connected components, loops, and voids \cite{Edelsbrunner2002} are computed from the tensor-derived metric space. These topological invariants formalize clusters, repeated circuits, and missing or avoided regions.
+    \item \textbf{Active inference and free energy.} Reaction delay, arousal, and expression change are interpreted as prediction error under the Free Energy Principle \cite{Friston2010}.
+    \item \textbf{Adaptive intervention.} Later stimuli can be selected by expected information gain, allowing the experiment to probe boundary regions more efficiently than a fixed stimulus list.
+\end{enumerate}
+
+The 3D visualization is not the primary scientific object. It is a projection of the tensor topology into a human-readable space, where nodes, edges, loops, and voids help researchers inspect latent structure.
 
 \section{Results}
 We observed clear differentiation between stable archetypal structures (Spirit Types) and unstable shadow-driven interferences (Ghost Patterns).
@@ -92,10 +139,9 @@ We observed clear differentiation between stable archetypal structures (Spirit T
 \end{itemize}
 
 \section{Conclusion}
-This paper introduces a paradigm shift, moving ``spirit'' from metaphysical abstraction to a concrete, physically measurable quantity. By operationalizing Spirit as a thermodynamic information quantity on a high-dimensional manifold, we have provided a framework that is both theoretically coherent and experimentally verifiable.
+This paper introduces a paradigm shift, moving ``spirit'' from metaphysical abstraction to a concrete, physically measurable quantity. By operationalizing Spirit as a thermodynamic information quantity on a high-dimensional tensor field, and by treating 3D manifold visualization as a projection of tensor geometry and topology, we provide a framework that is theoretically coherent, computationally extensible, and experimentally scalable.
 
 \bibliographystyle{plain}
 \bibliography{references}
 
 \end{document}
-
