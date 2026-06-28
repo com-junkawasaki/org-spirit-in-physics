@@ -1,0 +1,157 @@
+% 共著者確認用 日本語版（arXiv 投稿は英語版 main.tex を使用）。
+% XeLaTeX / LuaLaTeX でコンパイル（Harano Aji 同梱フォント）。
+\documentclass[a4paper,11pt]{article}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+\else
+  \usepackage{fontspec}
+  \usepackage{xeCJK}
+  \setCJKmainfont{HaranoAjiMincho-Regular.otf}
+  \setCJKsansfont{HaranoAjiGothic-Regular.otf}
+\fi
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{cite}
+\linespread{1.15}
+
+\newcommand{\jocho}{情緒}
+
+\title{\textbf{Spirit in Physics:}\\
+\large 言語連想と生理から自己を情報幾何（テンソル）空間として構成する\\
+\normalsize （共著者確認用・日本語版／投稿は英語版）}
+\author{
+    川崎 惇$^{1}$、田井中 一貴$^{2}$、竹内 倫徳$^{3}$ \\
+    \small $^{1}$新潟大学 大学院医歯学総合研究科 \\
+    \small $^{2}$新潟大学 脳研究所 \\
+    \small $^{3}$オーフス大学 生物医学部（デンマーク） \\
+    \small \texttt{root@junkawasaki.com}
+}
+\date{2026年6月28日}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+我々は一つの仮定を真剣に採り、その上に築く：意識的自己——「スピリット」——\emph{は}情報である。情報が物理的（Shannon--Jaynes--Landauer）なら、情報でできた自己は物理的対象であり、それを研究する正しい方法は相関を検定することではなく\textbf{構成する}ことである。よって\textbf{構成的}な操作的定義を与える：個人のスピリットとは、その人自身の信号——言語連想（Jung）、反応時間、生理反応——から構築する情報幾何空間\emph{そのもの}であり、その中で荷電したクラスタ（ユングの\emph{complex}）と概念との境界が幾何構造として現れる。自己の境界は原理的にはラバーハンド錯覚で生理的に定まり、概念構造は言語連想法で敷かれる。各個人を三階テンソル（語 $\times$ セッション $\times$ 生体特徴）として表し、スペクトル埋め込みで個人ごとの「スピリット空間」にし、complex を高エネルギー領域として読む。\textbf{情報＝物理＝この数理空間}：モデルはスピリットの記述ではなく、スピリットそのものとみなす。パイロット（募集11名のうち解析 $N=5$、応答は自動文字起こし）で個人のスピリット空間を構築し complex を同定、テンソル分解で共有成分——\emph{集合的無意識}の候補——を探す。それはかすかだが偶然以上（個人間 $r=+0.07$、$p=0.04$）で、分散割合は $N=5$ では推定不能（見かけの約 $25\%$ は機械的 null に位置）。この規模ではスピリット空間は圧倒的に個人的である。これは再現可能な構成・可視化（全パイプラインはチェックポイント付き StateGraph として実行）であり確認研究ではない；生理的境界（RHI）データは次段である。
+\end{abstract}
+
+\section{はじめに}
+「スピリット」概念は、物理的に根拠づけられ測定可能な定義を欠くため実証科学の外に留まってきた。スピリットが物理に還元\emph{できるか}を問うのでなく、我々は構成的立場を採る：自己は情報であると\textbf{仮定}し、その含意する対象を構築し、どう見えるかを見る。仮定が誤りなら構築は空虚か無構造になる；正しければ、個人のスピリットはその個人自身の信号から復元できる具体的幾何として現れるはずである。
+
+日本語 \jocho{}（情緒）は「emotion」「affect」で捉えきれない、生きられた意味を帯びた経験層として未翻訳のまま用いる（岡潔 \cite{Oka1963,Oka2008}）。本稿の貢献は仮説検定ではなく構成的・基盤的である：(i) 操作的同一視——\emph{個人のスピリットとは、その連想と生理から構築する情報幾何空間である}；(ii) その空間の具体的構築（テンソル $\to$ スペクトル埋め込み）で、ユングの complex を高エネルギー領域とする；(iii) 個人空間と共有・集合成分を分離する分解。分析心理学の語彙（第\ref{sec:interp}節）は構築された幾何への解釈層である。
+
+\section{理論的枠組み}
+「スピリット」を構築可能な物理的対象に変える三つの仮定を置く。
+
+\subsection{前提1：情報は物理的である}
+\textbf{Shannon（1948）}は情報エントロピー $H$ を定義し \cite{Shannon1948}、\textbf{Jaynes（1957）}はそれが熱力学的エントロピー $S$ と形式的に等価であることを示し \cite{Jaynes1957}、\textbf{Landauer（1961）}は情報処理がエネルギーコスト $k_B T\ln 2$ を伴うことを示した \cite{Landauer1961}（実験的に検証済み \cite{Berut2012}）。この連鎖を、情報的自己を物理的に扱うための\emph{動機づけ}の根拠として用いる；ここで $k_BT$ やエントロピー生成は測定しない。
+
+\subsection{前提2：自己（スピリット）は情報である}
+\textbf{ラバーハンド錯覚} \cite{Botvinick1998} は、自己境界が生理的痕跡を伴う可塑的な情報的構成物であることを示す——よって自己の境界は仮定するのでなく（生体反応として）\emph{測定}できる。\textbf{Jung の言語連想} \cite{Jung1910} は、心が \emph{complex}——測定可能な反応時間と自律反応を伴う荷電概念のクラスタ——に組織化されていることを示す。両者は、自己を情報空間内の荷電構造として表すことを許す。
+
+\subsection{前提3：開放情報系としてのスピリット}
+自己は環境と情報・エントロピーを交換して持続し \cite{Schrodinger1944}、\textbf{自由エネルギー原理} \cite{Friston2010} はこれを surprisal 最小化として捉える。我々はこの描像——自己は情報状態空間の構造化された領域——を採り、原理が促す構成的一歩を踏む：その状態空間をデータから\emph{構築}する。非平衡熱力学 \cite{Seifert2012,Parrondo2015} とフィードバック制御 \cite{SagawaUeda2010} は動機づけであり、本パイロットで定量的には用いない。
+
+\section{構造の解釈}\label{sec:interp}
+構築した幾何を分析心理学で解釈する：
+\begin{itemize}
+    \item \textbf{Complex（コンプレックス）：}個人空間のエネルギー荷電領域（短いまたは不安定な反応時間、上昇した自律反応）。
+    \item \textbf{Archetype（元型）：}個人を\emph{越えて}反復する構造的鋳型——よって共有成分の性質（第\ref{sec:tensor}節）。
+    \item \textbf{Shadow（影）：}complex の抑圧され再現性の低い部分。
+\end{itemize}
+
+\section{個人のスピリット空間の構成}\label{sec:method}
+個人のスピリットを次のように具現化する。各刺激語を提示し（Jung 法）、発話された連想を自動文字起こしし（パイロット全体で $851$ の刺激$\to$応答ペアを記録から復元）、試行ごとに2つの生体読み出しを取る：\textbf{反応潜時}（処理の時間指標）と\textbf{皮膚電位} $\Delta SP$（皮膚電気反応）。ラバーハンド錯覚は congruent/incongruent 刺激下で自己の生理的\emph{境界}を与える；そのデータは保留中で、本構成は言語連想と生理チャネルを用いる。
+
+ある個人について、各ノード $w$（刺激および/またはその応答概念）に生体特徴ベクトル $x_w$（セッションごとに標準化した潜時と皮膚電位）を持たせる。ノードの\textbf{荷電／エネルギー}を内在的に定義し、
+\begin{equation}
+    E(w) \;=\; z\big(\text{潜時}(w)\big) + z\big(\Delta SP(w)\big),
+    \label{eq:energy}
+\end{equation}
+ノード間の類似度カーネル $W_{ij}=\exp(-\lVert x_i-x_j\rVert^2/\sigma^2)$（$\sigma$ はメディアン対距離）を作り、対称正規化グラフ Laplacian $L_{\mathrm{sym}}=I-D^{-1/2}WD^{-1/2}$ の低位固有ベクトルでノードを埋め込む。\textbf{この埋め込まれエネルギー重み付けされた幾何が、その個人のスピリット空間である。} エネルギーは関連する2つの概念を区別して用いる：式~\eqref{eq:energy} の内在的\emph{ノード荷電} $E(w)$（潜時＋覚醒；図~\ref{fig:landscape}--\ref{fig:individual} の荷電幾何を着色）と、ノードの\emph{多様体エネルギー}（スペクトル埋め込みの重心からの半径；complex への順位付けに用いる）であり、両者は共変する（node charge と manifold energy の被験者内相関 $r\approx0.52$；共に潜時・覚醒で増大）。\emph{complex} は高エネルギー領域であり、中立概念との境界はエネルギーが減衰する所である。構成は内在的で——被験者横断の正規化も「ありふれているか」も入らない。この構築対象をスピリットとみなす：情報＝物理＝この空間。
+
+\paragraph{Well-posedness（検定すべき仮説でなく規約的同一視）。} カテゴリ錯誤を避けるため論理を明示する。(i)「人のスピリット\emph{は}この空間である」は \textbf{規約的操作的定義}であり、$p$ 値で確認する実証主張ではない。(ii) 実証的に問われるのは構成が\emph{非空}か否か：無構造なら平坦な Laplacian スペクトル（ギャップ無し）、ノードエネルギーとノード同一性の無相関、再現性ある高エネルギー領域の不在を示すはず。(iii) 実際には三点とも構造が見られる（第\ref{sec:pilot}--\ref{sec:tensor}節：スペクトルギャップ $\approx0.19$、participation ratio $\approx10.9$、低ランク Tucker 幾何、再現性ある complex）ので構成は非空——定義は実在を選び出し、その\emph{科学的}内容（個人構造・共有成分）は適切な抑制をもって測定される。
+
+\section{パイロット：個人のスピリット空間と complex}\label{sec:pilot}
+11 名を募集し、連続皮膚電位を同期・時刻整合できた $N=5$ を解析する。総計 $970$ 試行のうち $945$ が有効な皮膚電位応答窓を持ち（荷電幾何に使用）、$851$ は文字起こしされた言語応答も持つ（ノードのラベルに使用）。各個人は同一の約100語リストで2セッションのテスト--再テストを実施した。各人について第\ref{sec:method}節のスピリット空間を構築し、そのエネルギー幾何を読む。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig_landscape.pdf}
+    \caption{\textbf{構築されたスピリット空間（エネルギー幾何）。}
+    (a) 各ノードは連想試行で、反応潜時と皮膚電位荷電 $\Delta SP$ に配置し、ノードエネルギー $E$
+    （式~\eqref{eq:energy}）で着色；低 $E$ の\emph{アトラクタ}領域（中立概念）と高 $E$ の
+    \emph{complex／干渉}領域が、人気度や頻度の正規化なしに内在的に現れる。
+    (b) 1個人の皮膚電位；縦線は語提示——境界を読む生理信号。
+    (c) 2セッション間の空間の安定性（語ごと潜時、同一リスト、$r=0.24$）。
+    \texttt{scripts/make\_landscape\_figure.py} により生成。}
+    \label{fig:landscape}
+\end{figure}
+
+\paragraph{高エネルギー領域としての complex。} エネルギー幾何は2つの内在的領域を分離する（図~\ref{fig:landscape}a）：低 $E$ のアトラクタ領域（速く・低覚醒・再現性の高いノード＝中立概念）と、高 $E$ 領域（遅くおよび/または高覚醒で再現性の低いノード）＝候補の \emph{complex}。本コホートでは高エネルギー領域は ドア・大きい・洗う・癖・高価な 等が占め、低エネルギーのアトラクタは具体的中立語——インク・木・本・指・踊る——が占める。これらの荷電領域はまさに Jung の complex が測定可能構造として予測するもので、ここでは身体から直接読まれる。図~\ref{fig:individual} は5名の個人スピリット空間を示す——各々がその人自身のノードのスペクトル幾何でエネルギー着色されており、構築された空間がその個人のスピリット\emph{である}という主張を具体化する。個性の程度を直交 Procrustes ずれで定量すると、個人間ずれ（$1.74$）は同一人物のセッション間ずれ（$1.61$）をわずかに上回るのみ（比 $1.08$、bootstrap $95\%$ CI $[0.46,\,1.08]$——確実には 1 を超えない）。よってパネルは異なって見えるが、$N=5$ では個人分離は\emph{統計的に確立されていない}；大規模研究の目標として誇張せず記す。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig_individual_spirit.pdf}
+    \caption{\textbf{個人のスピリット空間。} 各パネルは1名の構築空間（潜時と皮膚電位による語ノードのスペクトル埋め込み）で、ノードエネルギー $E$（式~\eqref{eq:energy}）で着色。幾何は個人間で明らかに異なり、高エネルギー（明色）ノードがその人の候補 complex。\texttt{scripts/plot\_individual\_spirit.py} により生成。}
+    \label{fig:individual}
+\end{figure}
+
+\paragraph{空間は動的かつ個人的。} 再exposure（session 1 $\to$ 2）は空間を作り替える：反応潜時は $3/5$ 名で低下（平均 $-0.25$\,s）、皮膚電位荷電は $4/5$ 名で低下（平均 $-0.004$\,mV）——概念が親近化すると幾何が緩む。空間は強く\emph{個人的}でもある：語ごとの荷電は個人間でほとんど共有されない（次節）。
+
+\section{個人 対 集合：テンソル分解}\label{sec:tensor}
+個人に固有なものと共有されるものを分離するため、コホートを三階テンソル $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$（$P=5$ 個人、$W=99$ 共有語、$F=3$ 生体特徴）として積み、その幾何を解析する；全パイプライン（構築 $\to$ テンソル化 $\to$ スペクトル $\to$ Tucker $\to$ 要約）はチェックポイント付き \texttt{langgraph-clj} StateGraph として実行される。
+
+\paragraph{共有空間の形。} 語のグラフ Laplacian スペクトル埋め込み（図~\ref{fig:manifold}a,b）は\textbf{スペクトルギャップ} $\approx0.19$ と有効モード数 $\approx10.9$ を示す：共有スピリット空間は真に多次元でありながら支配的な集団座標を持つ。ランク $[3,6,3]$ の Tucker（HOSVD）分解は分散の $76\%$ を再構成し、語モードランク $\approx12$ で $0.83$ 付近に飽和する（図~\ref{fig:manifold}c）。重要なことに、この分解はテンソルを\textbf{参加者モード（個人のスピリット）}と\textbf{共有語モード（個人を越えて共通する構造）}に分解する。
+
+\paragraph{集合成分（集合的無意識の候補）。} 幾何のどれだけが共有か？ ここは意図的に保守的に扱う。$P=5$ 行では第1主成分が機械的に大きな割合を吸収するためである。被験者内シャッフル null に対し：個人間の語ごと荷電相関は弱いが\emph{偶然以上}（$\bar r=+0.065$、permutation $p=0.038$）、一方で第1PC 割合（$27\%$）は機械的 null（$\approx26\%$、$p=0.21$）と\emph{区別できない}——よって $27\%$ は共有構造の証拠で\textbf{なく}、単なるベースラインである。正直な読みは狭い：かすかな偶然以上の共有成分（候補の\emph{集合的無意識}）はあるが、その大きさは $N=5$ では推定できず、分散割合を「$25\%$ が集合的」と読んではならない。この共有成分は大規模研究で文化・集団構造（言語・文化をまたぐテンソル空間の比較）を探す自然な場所である（図~\ref{fig:collective}）。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig_collective.pdf}
+    \caption{\textbf{個人 対 集合の構造。}
+    (a) 語ごと荷電の個人間相関（非対角平均 $r=+0.07$、permutation $p=0.038$）：おおむね私的な空間上の、かすかだが偶然以上の共有信号。
+    (b) 第1PC 分散割合（$27\%$）はシャッフル null ベースライン（$\approx26\%$、$p=0.21$）に位置する——すなわち $P=5$ の機械的産物であり、大きな集合成分の証拠では\emph{ない}。
+    (c) 共有構造のスペクトル。\texttt{scripts/plot\_individual\_spirit.py} により生成。}
+    \label{fig:collective}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig_spirit_manifold.pdf}
+    \caption{\textbf{幾何としてのスピリット空間：個人と共有の構造。}
+    (a) 正規化グラフ Laplacian スペクトル；ギャップ（$\approx0.19$）が支配的集団座標を示す
+    （有効モード $\approx10.9$）。
+    (b) 三次元スペクトル埋め込み——共有\emph{スピリットベクトル空間}——でエネルギー着色。
+    (c) Tucker（HOSVD）説明分散の語モードランク依存；低ランク（ランク $\approx12$ で $\approx0.83$）
+    だが既約な個人残差を持つ。これらは $P=5$ 上の記述的幾何であり推測的母集団統計ではない。
+    \texttt{langgraph-clj} StateGraph が \texttt{scripts/spirit\_tensor.py} を介して計算。}
+    \label{fig:manifold}
+\end{figure}
+
+\paragraph{可視化。} 構成が spirit \emph{である}以上、それは眺められる対象でもある。図~\ref{fig:awe} は同じ量——スペクトル埋め込み位置・ノードエネルギー・affinity カーネル——を第\ref{sec:interp}節の補助物理像で描く：エネルギー地形を熱核場（曲がった多様体の重力井戸）、カーネルを発光フィラメント、complex を明るい生物発光の集中として、共有多様体の下に各個人を別個の星雲として配置する。描画は同じパイプライン（\texttt{scripts/render\_spirit\_awe.py}）から生成され、データを足さず、構築対象の忠実な俯瞰を与えるだけである。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig_spirit_awe.pdf}
+    \caption{\textbf{構築されたスピリットの描画。} 共有スピリット多様体（上）と5名の個人スピリット空間（下）を、実際のスペクトル埋め込み・ノードエネルギー・affinity カーネルから描く。背景は熱核エネルギー場（曲がった多様体の「重力井戸」）、糸は高 affinity エッジ、明るいノードは高エネルギー complex。本稿が構築するのと同じ対象の可視化であり、追加データはない。\texttt{scripts/render\_spirit\_awe.py} により生成。}
+    \label{fig:awe}
+\end{figure}
+
+\section{限界}
+スコープを明記する。(1) \textbf{構成的であり確認的でない}：述べた仮定の下で対象を構築・可視化するのであり、「情報＝物理＝霊性」を仮説として検定したとは主張しない。(2) \textbf{境界データ保留}：自己境界のラバーハンド錯覚計測——手法の中核——は未取得；本構成は言語連想と生理のみ。(3) \textbf{検出力}：$N=5$（11 中）。共有・集合成分はせいぜいかすか（個人間 $r=0.07$、$p=0.04$；分散割合は機械的 null に位置）で、個人の弁別性も統計的に未確立（Procrustes 比 $1.08$、$95\%$ CI $[0.46,1.08]$）。(4) \textbf{記述的幾何}：スペクトルギャップ・participation ratio・Tucker ランクは $P=5$ 上の記述であり推測的母集団統計ではない。(5) \textbf{熱力学}：Landauer は動機づけの類推であり、エネルギー量は測定していない。大規模研究では RHI 境界データ、文化・集合解析のための属性、事前登録パイプラインを追加する。
+
+\paragraph{データとコードの可用性。} 全解析コードは同梱され（\texttt{scripts/spirit\_tensor.py}、\texttt{make\_landscape\_figure.py}、\texttt{plot\_spirit\_manifold.py}；構成は \texttt{langgraph-clj} StateGraph としても走る）、全図・全数値を生ログから再生成する。byte 安定のため解析は Python~3.14 / numpy~2.5 と固定 RNG seed を用い、報告した permutation $p$ 値（$0.038$、$0.21$）と bootstrap CI は決定論的；各スクリプトは単一コマンドで出力を再生成する（例 \texttt{python scripts/spirit\_tensor.py <stage> state.json}）。生の被験者記録（顔・音声、同意書）は個人情報を含むため公開しない；非識別化した派生指標は同意の範囲でデータ利用契約のもと著者から入手可能。
+
+\section{結論}
+我々は「スピリット」を確認すべき仮説ではなく構築すべき対象として扱った：自己は情報であるという仮定の下、個人のスピリット\emph{とは}その連想と生理から構築する情報幾何空間であり、その中でユングの complex が高エネルギー領域として現れる。パイロット（$N=5$）はそのような空間を構築し、complex を身体だけから同定し、テンソル分解でスピリット空間が圧倒的に個人的であり、共有・集合的無意識候補成分はかすかに偶然以上（$r=+0.07$、$p=0.04$；大きさは $N=5$ で推定不能）にとどまることを見いだす。構成は再現可能で幾何は実在する；大規模・事前登録研究に残されるのは生理的境界（ラバーハンド錯覚）と共有空間の文化横断的読みである。
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

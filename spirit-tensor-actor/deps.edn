@@ -1,0 +1,6 @@
+{:deps {io.github.com-junkawasaki/langgraph-clj {:local/root "../../langgraph-clj"}}
+ :paths ["src"]
+ :aliases
+ {:dev {:override-deps {io.github.com-junkawasaki/langchain-clj
+                        {:local/root "../../langchain-clj"}}}
+  :run {:main-opts ["-m" "spirit.graph"]}}}
