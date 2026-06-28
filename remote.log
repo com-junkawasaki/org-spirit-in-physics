@@ -1,0 +1,1 @@
+697416c7-77ce-42a0-9ed9-e85b5dc6995f bucket=ai-gftd-datasets chunk=50MiB datacenter=US encryption=none fileprefix=spirit-in-physics/ host=s3.us-west-004.backblazeb2.com name=b2 port=443 protocol=https region=us-west-004 signature=v4 storageclass=STANDARD type=S3 timestamp=1782641463s
