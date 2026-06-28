@@ -1,0 +1,7 @@
+# build artifacts / regenerable
+*.png
+*.aux
+*.log
+*.out
+arxiv-spirit-in-physics.tar.gz
+scripts/
