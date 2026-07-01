@@ -2,3 +2,4 @@ node_modules/
 out/
 .shadow-cljs/
 .wrangler/
+.dev.vars
