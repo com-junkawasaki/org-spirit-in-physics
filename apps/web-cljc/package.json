@@ -21,6 +21,7 @@
     "sirv-cli": "^3.0.1"
   },
   "dependencies": {
-    "@simplewebauthn/browser": "^11.0.0"
+    "@simplewebauthn/browser": "^11.0.0",
+    "katex": "^0.16.47"
   }
 }

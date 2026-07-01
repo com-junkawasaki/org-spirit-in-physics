@@ -9,6 +9,7 @@
             [spirit-ui.state :as state]
             [spirit-ui.views.shared.nav :as nav]
             [spirit-ui.views.web.consent :as consent]
+            [spirit-ui.views.web.paper :as paper]
             [spirit-ui.views.web.privacy :as privacy]
             [spirit-ui.views.web.settings :as settings]
             [spirit-ui.views.web.support :as support]))
@@ -18,11 +19,12 @@
    (router/compile-route :settings "/settings")
    (router/compile-route :privacy "/privacy")
    (router/compile-route :support "/support")
+   (router/compile-route :paper "/paper")
    (router/compile-route :home "/")])
 
 (def ^:private nav-links
   [[:home "/" "Home"] [:consent "/consent" "Consent"] [:settings "/settings" "Settings"]
-   [:privacy "/privacy" "Privacy"] [:support "/support" "Support"]])
+   [:privacy "/privacy" "Privacy"] [:support "/support" "Support"] [:paper "/paper" "Paper"]])
 
 (defn- home-view [_state]
   (ir/el :div {:class "home"}
@@ -35,6 +37,7 @@
     :settings (settings/view state)
     :privacy (privacy/view state)
     :support (support/view state)
+    :paper (paper/view state)
     (home-view state)))
 
 (defn- root-view [state]
@@ -51,7 +54,17 @@
   (state/register-handler! :route-changed
     (fn [s path]
       (let [{:keys [route params]} (router/match-route routes path)]
+        (when (= :paper (:name route))
+          ;; paper/mount-effects! queries the live DOM (.paper-article,
+          ;; getElementById per section) — must run after this handler's
+          ;; swap! has committed the new route's render, see defer!'s GOTCHA
+          ;; docstring (same pattern as the :navigate handler below).
+          (state/defer! #(paper/mount-effects! state/dispatch!)))
         (assoc s :route (merge {:name (:name route)} params)))))
+  (state/register-handler! :toggle-toc
+    (fn [s] (update-in s [:paper :toc-open?] not)))
+  (state/register-handler! :set-active-section
+    (fn [s section-id] (assoc-in s [:paper :active-section] section-id)))
   (state/register-handler! :set-field
     (fn [s field-path value]
       (assoc-in s (into [:form] (if (vector? field-path) field-path [field-path])) value)))

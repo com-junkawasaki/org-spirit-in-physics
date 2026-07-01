@@ -21,7 +21,22 @@
   attached to is now wired to a different field. Static/append-only/
   content-only-changes lists are fine unkeyed; see e.g.
   `views/web/consent.cljc`'s `agreement-fields` (static 4 items, still keyed
-  defensively) vs any future dynamically-added-row UI (MUST key).")
+  defensively) vs any future dynamically-added-row UI (MUST key).
+
+  OPAQUE SUBTREES — `attrs {:opaque true}` marks a node's subtree as owned by
+  code OUTSIDE this renderer (e.g. spirit-ui.katex-interop's
+  renderMathInElement, which mutates a container's children in place —
+  splitting/replacing text nodes — without updating this namespace's
+  tracked `:ui/children`). Once such a mutation has happened, the tracked
+  IR no longer matches `.childNodes`' actual count/shape; a later
+  `patch-children!` on that container would zip stale IR against the
+  mutated live nodes by position and corrupt them (wrong node treated as
+  wrong type, or extra host-inserted nodes left out of reconciliation
+  bookkeeping entirely). `patch!` skips re-diffing an opaque node's subtree
+  as long as its own old/new IR are `=` (see `patch!`'s :else branch) —
+  callers MUST make an opaque node's content construction pure/static so
+  successive renders produce `=` IR, or legitimate content changes get
+  silently dropped too.")
 
 ;; ---------- events ----------
 
@@ -97,8 +112,8 @@
 (defn- diff-attrs! [^js dom-node old-attrs new-attrs dispatch!]
   (let [old-on (:ui/on old-attrs)
         new-on (:ui/on new-attrs)
-        old-plain (dissoc old-attrs :ui/on)
-        new-plain (dissoc new-attrs :ui/on)]
+        old-plain (dissoc old-attrs :ui/on :opaque)
+        new-plain (dissoc new-attrs :ui/on :opaque)]
     (doseq [[k v] new-plain]
       (when (not= (get old-plain k) v) (set-attr! dom-node k v)))
     (doseq [k (keys old-plain)]
@@ -199,6 +214,9 @@
     (let [^js new-node (create-dom! new-ir dispatch!)]
       (when (and dom-node (.-parentNode dom-node)) (.replaceWith dom-node new-node))
       new-node)
+
+    (and (:opaque (:ui/attrs new-ir)) (= old-ir new-ir))
+    dom-node
 
     :else
     (do
