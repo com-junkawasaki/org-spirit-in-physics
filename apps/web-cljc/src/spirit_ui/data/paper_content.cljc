@@ -9,11 +9,21 @@
   "Look up a message by key, interpolating `{param}`-style placeholders from
   `params` (a map of string-or-keyword param name -> value), matching the
   paraglide runtime's own `{name}` template syntax used in en.json (e.g.
-  `:results-responses` \"{count} responses\")."
+  `:results-responses` \"{count} responses\").
+
+  GOTCHA: `clojure.string/replace`'s string/string overload still hands the
+  replacement to native JS `String.prototype.replace`, which treats `$&`,
+  `$$`, `$'`, `` $` `` etc. in the REPLACEMENT specially regardless of the
+  match arg — the docstring's 'replacement is literal ... except
+  pattern/string' claim doesn't hold for this overload in practice. `v` is
+  escaped (`$` -> `$$`) before substitution so a future param value
+  containing `$` (plausible on this LaTeX-heavy page) can't corrupt the
+  surrounding text via JS's special-replacement-pattern substitution."
   ([messages k] (get messages k))
   ([messages k params]
    (reduce-kv (fn [s param-name v]
-                (clojure.string/replace s (str "{" (name param-name) "}") (str v)))
+                (clojure.string/replace s (str "{" (name param-name) "}")
+                                         (clojure.string/replace (str v) "$" "$$")))
               (get messages k) params)))
 
 (def messages

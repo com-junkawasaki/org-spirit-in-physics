@@ -53,16 +53,29 @@
   (state/register-handler! :navigate (fn [s path] (state/defer! #(router/navigate! path)) s))
   (state/register-handler! :route-changed
     (fn [s path]
-      (let [{:keys [route params]} (router/match-route routes path)]
-        (when (= :paper (:name route))
-          ;; paper/mount-effects! queries the live DOM (.paper-article,
-          ;; getElementById per section) — must run after this handler's
-          ;; swap! has committed the new route's render, see defer!'s GOTCHA
-          ;; docstring (same pattern as the :navigate handler below).
-          (state/defer! #(paper/mount-effects! state/dispatch!)))
-        (assoc s :route (merge {:name (:name route)} params)))))
+      (let [{:keys [route params]} (router/match-route routes path)
+            prev-route-name (get-in s [:route :name])
+            next-route-name (:name route)]
+        (cond
+          ;; only (re-)run mount-effects! on an ACTUAL arrival at /paper —
+          ;; router/navigate! fires :route-changed unconditionally even when
+          ;; the path didn't change (e.g. clicking the "Paper" nav link
+          ;; while already on /paper), and re-running it needlessly tears
+          ;; down/recreates the IntersectionObserver and re-scans the whole
+          ;; article with KaTeX for no DOM change.
+          (and (= :paper next-route-name) (not= :paper prev-route-name))
+          (state/defer! #(paper/mount-effects! state/dispatch!))
+          ;; leaving /paper — this router has no dedicated route-leave hook,
+          ;; so disconnect the scroll-spy observer (and remove the injected
+          ;; JSON-LD) here, the one place that knows both the old and new
+          ;; route.
+          (and (= :paper prev-route-name) (not= :paper next-route-name))
+          (paper/disconnect-observer!))
+        (assoc s :route (merge {:name next-route-name} params)))))
   (state/register-handler! :toggle-toc
     (fn [s] (update-in s [:paper :toc-open?] not)))
+  (state/register-handler! :close-toc
+    (fn [s] (assoc-in s [:paper :toc-open?] false)))
   (state/register-handler! :set-active-section
     (fn [s section-id] (assoc-in s [:paper :active-section] section-id)))
   (state/register-handler! :set-field

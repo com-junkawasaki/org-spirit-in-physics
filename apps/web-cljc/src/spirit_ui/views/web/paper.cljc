@@ -222,7 +222,20 @@
                          (ir/el :li {:key id}
                                 (ir/el :a {:href (str "#" id)
                                            :class (when (= active-section id) "active")
-                                           :ui/on {:click [:toggle-toc]}}
+                                           ;; explicit :close-toc (not the
+                                           ;; toggle-based :toggle-toc used
+                                           ;; elsewhere) — matches the
+                                           ;; original's unconditional
+                                           ;; `isTocOpen = false`. A toggle
+                                           ;; here would flip toc-open? to
+                                           ;; true on a desktop click (the
+                                           ;; sidebar has no open/closed
+                                           ;; gating above the mobile
+                                           ;; breakpoint), so a later
+                                           ;; resize-to-mobile in the same
+                                           ;; session would show the TOC
+                                           ;; already (unexpectedly) open.
+                                           :ui/on {:click [:close-toc]}}
                                        title)))))))
 
 (defn view [state]
@@ -248,20 +261,53 @@
 ;; ---------- post-mount browser-API glue (KaTeX render + scroll-spy) ----------
 
 (defonce ^:private section-observer (atom nil))
+(def ^:private json-ld-script-id "paper-json-ld")
+
+(defn- remove-json-ld! []
+  (when-let [old (js/document.getElementById json-ld-script-id)]
+    (.remove old)))
+
+(defn disconnect-observer!
+  "Stop the scroll-spy IntersectionObserver and remove the injected JSON-LD
+  <script>, if active. Called both at the top of `mount-effects!`
+  (re-entering /paper) and from web_main.cljc's :route-changed handler when
+  navigating AWAY from /paper — this app's router has no dedicated
+  route-leave hook, so the leave case is handled at the one call site that
+  already knows the previous route."
+  []
+  (when-let [old @section-observer]
+    (.disconnect old)
+    (reset! section-observer nil))
+  (remove-json-ld!))
+
+(defn- inject-json-ld!
+  "Original PaperView.svelte injects <script type=\"application/ld+json\">
+  via <svelte:head>; this app has no head-mutation utility (grepped: none
+  exists), so we do the equivalent directly here rather than leave
+  content/json-ld computed-but-unrendered dead data."
+  []
+  (remove-json-ld!)
+  (let [script (js/document.createElement "script")]
+    (set! (.-id script) json-ld-script-id)
+    (set! (.-type script) "application/ld+json")
+    (set! (.-textContent script) (js/JSON.stringify (clj->js content/json-ld)))
+    (.appendChild js/document.head script)))
 
 (defn mount-effects!
   "Call once after navigating to /paper (see web_main.cljc's :route-changed
   handler, wrapped in state/defer! so the route's DOM has already committed
   — same GOTCHA as router/navigate!, see spirit-ui.state's dispatch!
   docstring). Renders KaTeX math into the (opaque, see article-body's
-  docstring) article subtree, and wires an IntersectionObserver that drives
-  TOC active-section highlighting by dispatching :set-active-section — that
-  handler only updates toc-sidebar's small subtree, never article-body's,
-  so it never re-triggers dom.cljs's opaque-skip corruption hazard."
+  docstring) article subtree, injects the JSON-LD <script> tag, and wires
+  an IntersectionObserver that drives TOC active-section highlighting by
+  dispatching :set-active-section — that handler only updates
+  toc-sidebar's small subtree, never article-body's, so it never
+  re-triggers dom.cljs's opaque-skip corruption hazard."
   [dispatch!]
-  (when-let [old @section-observer] (.disconnect old))
+  (disconnect-observer!)
   (when-let [article (js/document.querySelector ".paper-article")]
     (katex/render-math-in! article))
+  (inject-json-ld!)
   (let [observer (js/IntersectionObserver.
                    (fn [entries]
                      (doseq [entry entries]

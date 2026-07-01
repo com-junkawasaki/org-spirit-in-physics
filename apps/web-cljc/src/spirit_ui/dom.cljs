@@ -33,10 +33,16 @@
   mutated live nodes by position and corrupt them (wrong node treated as
   wrong type, or extra host-inserted nodes left out of reconciliation
   bookkeeping entirely). `patch!` skips re-diffing an opaque node's subtree
-  as long as its own old/new IR are `=` (see `patch!`'s :else branch) —
-  callers MUST make an opaque node's content construction pure/static so
-  successive renders produce `=` IR, or legitimate content changes get
-  silently dropped too.")
+  as long as its own old/new IR are `=` (see `patch!`'s opaque cond
+  clause) — callers MUST make an opaque node's content construction
+  pure/static so successive renders produce `=` IR. If old/new IR DIFFER
+  (the caller violated purity), the skip does NOT apply and control falls
+  to the ordinary :else branch, which runs the same `patch-children!`
+  against the already-mutated live DOM described above — i.e. a legitimate
+  content update on an impure opaque node hits the SAME corruption, not a
+  milder \"update silently ignored\" outcome. `:opaque` only has a safe path
+  for content that never changes; a future caller needing periodic updates
+  on a host-mutated subtree needs a different mechanism.")
 
 ;; ---------- events ----------
 
