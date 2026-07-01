@@ -25,6 +25,29 @@
     (js/Date.)
     (js/Date. (if (> ts 1e12) ts (* ts 1000)))))
 
+(defn- max-or
+  "Port of the original's `d3.max(xs, accessor) || fallback` idiom — NOT the
+  same as a floor/`(apply max fallback xs)`. JS `||` only falls back when
+  the computed max is falsy (0 here, since every accessor already coerces
+  to a non-negative number) — a small-but-truthy real max (e.g. 0.005) is
+  used as-is, not clamped up to `fallback`. Mistranslating this as a floor
+  was a real bug found via /review (PR #22): reaction-value is always
+  ~1e-4..1e-2 (backend: 1/reactionTimeMs), so `(apply max 1 xs)` returned 1
+  for every real dataset, flattening the Reaction Value line to the bottom
+  of its lane."
+  [xs fallback]
+  (let [m (if (seq xs) (apply max xs) 0)]
+    (if (zero? m) fallback m)))
+
+(defn- pad-if-degenerate
+  "[d0 d1] unchanged, unless they're the same instant — then d1 is pushed
+  60s out. Same zero-width-domain guard the original applies to both the
+  main chart and the overview brush chart; shared here (both
+  render-overview-chart! and timeline-extent call this) so a future change
+  to the pad amount only needs one edit."
+  [^js d0 ^js d1]
+  (if (= (.getTime d0) (.getTime d1)) [d0 (js/Date. (+ (.getTime d0) 60000))] [d0 d1]))
+
 (defn sparkline-path
   "KPICards' getPath: pure function, no DOM — returns an SVG path `d`
   string for a 0-100 normalized viewBox. Safe to call directly from
@@ -59,15 +82,12 @@
           sorted (vec (sort-by :timestamp data))]
       (when (seq sorted)
         (let [ts-fn (fn [d] (to-date (:timestamp d)))
-              extent0 (to-date (:timestamp (first sorted)))
-              extent1 (to-date (:timestamp (last sorted)))
-              extent1 (if (= (.getTime extent0) (.getTime extent1))
-                        (js/Date. (+ (.getTime extent0) 60000))
-                        extent1)
+              [extent0 extent1] (pad-if-degenerate (to-date (:timestamp (first sorted)))
+                                                    (to-date (:timestamp (last sorted))))
               ^js x-scale (-> (d3/scaleTime) (.domain #js [extent0 extent1]) (.range #js [0 overview-width]))
               rv-vals (mapv #(or (:reaction-value %) 0) data)
-              rv-min (apply min 0 rv-vals)
-              rv-max0 (apply max 0 rv-vals)
+              rv-min (apply min rv-vals)
+              rv-max0 (apply max rv-vals)
               rv-max (if (= rv-min rv-max0) (inc rv-max0) rv-max0)
               ^js y-scale (-> (d3/scaleLinear) (.domain #js [rv-min rv-max]) (.range #js [overview-height 0]))
               ^js area (-> (d3/area)
@@ -135,7 +155,7 @@
 (defn- timeline-extent [filtered time-range]
   (let [d0 (if time-range (to-date (:start time-range)) (to-date (:timestamp (first filtered))))
         d1 (if time-range (to-date (:end time-range)) (to-date (:timestamp (last filtered))))]
-    (if (= (.getTime d0) (.getTime d1)) [d0 (js/Date. (+ (.getTime d0) 60000))] [d0 d1])))
+    (pad-if-degenerate d0 d1)))
 
 (defn- render-sections! [^js g section-height inner-width left-margin]
   (doseq [[i s] (map-indexed vector timeline-sections)]
@@ -157,11 +177,14 @@
             (.attr "fill" (:color s)) (.attr "class" "filter drop-shadow-sm"))))))
 
 (defn- render-reaction-value! [^js g x-scale data filtered section-height]
-  (let [rv-max (apply max 1 (mapv #(or (:reaction-value %) 0) data))
+  (let [rv-max (max-or (mapv #(or (:reaction-value %) 0) data) 1)
         ^js rv-scale (-> (d3/scaleLinear) (.domain #js [0 rv-max]) (.range #js [(- section-height 10) 10]))
         ^js line (-> (d3/line) (.x (fn [d] (x-scale (to-date (:timestamp d)))))
                      (.y (fn [d] (rv-scale (or (:reaction-value d) 0)))) (.curve d3/curveMonotoneX))
-        with-word (filterv #(and (:word %) (not= (:word %) "Unknown")) filtered)]
+        ;; word && word !== 'Unknown' in JS: "" is falsy, so blank words are
+        ;; excluded. CLJS truthiness differs ("" is truthy) — (seq %) treats
+        ;; blank/nil the same way JS's `&&` did (found via /review, PR #22).
+        with-word (filterv #(and (seq (:word %)) (not= (:word %) "Unknown")) filtered)]
     (-> g (.append "path") (.datum (to-array filtered)) (.attr "d" line)
         (.attr "class" "fill-none stroke-blue-500") (.style "stroke-width" 2.5) (.style "stroke-linecap" "round"))
     (-> g (.selectAll ".rv-dot") (.data (to-array with-word)) (.enter) (.append "circle")
@@ -170,7 +193,7 @@
         (.attr "r" 4) (.attr "class" "fill-white stroke-blue-500") (.style "stroke-width" 2))))
 
 (defn- render-reaction-time! [^js g x-scale data filtered section-height]
-  (let [rt-max (apply max 5000 (mapv #(or (:reaction-time %) 0) data))
+  (let [rt-max (max-or (mapv #(or (:reaction-time %) 0) data) 5000)
         ^js rt-scale (-> (d3/scaleLinear) (.domain #js [0 rt-max])
                          (.range #js [(- (* section-height 2) 10) (+ section-height 10)]))
         responded (filterv :has-response filtered)]
@@ -179,9 +202,14 @@
         (.attr "cy" (fn [d] (rt-scale (or (:reaction-time d) 0))))
         (.attr "r" 4) (.attr "class" "fill-red-500"))))
 
-(defn- phys-ch3 [d]
-  (or (some #(when (or (= (:measurement-type %) "Ch3") (= (:measurement_type %) "Ch3")) (:value %))
-            (:physiological d))
+(defn- phys-ch3
+  "spirit-ui.data.timeline-mapping/->point is the single normalization
+  point for :physiological readings — it always renames to :measurement-type
+  (kebab-case), so a raw :measurement_type here can never occur; no dual-key
+  fallback needed (removed one during /review, PR #22 — it read as
+  ambiguity that didn't exist)."
+  [d]
+  (or (some #(when (= (:measurement-type %) "Ch3") (:value %)) (:physiological d))
       0))
 
 (defn- render-physiological! [^js g x-scale filtered section-height]

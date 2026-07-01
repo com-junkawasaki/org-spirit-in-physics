@@ -45,7 +45,14 @@
 
 (defn register-handlers! []
   (state/register-handler! :timeline-loading
-    (fn [s] (-> s (assoc-in [:timeline :loading?] true) (assoc-in [:timeline :error] nil))))
+    ;; :active-tab reset to "timeline" here (not just :loading?/:error) —
+    ;; without it, picking "3D Space" on one participant then navigating to
+    ;; a DIFFERENT participant silently opened their page on the (still
+    ;; placeholder) 3D tab instead of the timeline (found via /review, PR
+    ;; #22). :timeline-loading fires at the start of every load-timeline!
+    ;; call, i.e. every fresh route entry — the natural reset point.
+    (fn [s] (-> s (assoc-in [:timeline :loading?] true) (assoc-in [:timeline :error] nil)
+                (assoc-in [:timeline :active-tab] "timeline"))))
   (state/register-handler! :timeline-error
     (fn [s msg] (-> s (assoc-in [:timeline :loading?] false) (assoc-in [:timeline :error] msg))))
   (state/register-handler! :timeline-loaded
@@ -68,12 +75,26 @@
         (state/defer! #(render-chart! s'))
         s')))
   (state/register-handler! :set-active-tab
-    (fn [s tab] (assoc-in s [:timeline :active-tab] tab))))
+    ;; Switching FROM "force3d" back TO "timeline" destroys and recreates
+    ;; the :opaque <svg> shells (timeline_chart.cljc's view has no dynamic
+    ;; content of its own — dom.cljs's keyed-diff sees the tab-content
+    ;; subtree's shape change and rebuilds it fresh, empty). Unlike
+    ;; :timeline-loaded/:set-time-range, this handler doesn't otherwise
+    ;; change chart INPUTS, but it does change which physical DOM nodes
+    ;; back the chart — so it needs the same render-chart! trigger (found
+    ;; via /review, PR #22: this was the one chart-affecting handler that
+    ;; omitted it, leaving the chart permanently blank after any 3D-Space
+    ;; round trip).
+    (fn [s tab]
+      (let [s' (assoc-in s [:timeline :active-tab] tab)]
+        (when (= tab "timeline")
+          (state/defer! #(render-chart! s')))
+        s'))))
 
 ;; ---------- view ----------
 
 (defn- tab-button [{:keys [active-tab tab label]}]
-  (ir/el :button {:key tab :class (str "tab-button" (when (= active-tab tab) " active"))
+  (ir/el :button {:key tab :type "button" :class (str "tab-button" (when (= active-tab tab) " active"))
                    :ui/on {:click [:set-active-tab tab]}}
          label))
 

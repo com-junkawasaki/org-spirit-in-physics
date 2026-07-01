@@ -2,20 +2,32 @@
   "Port of apps/web/src/lib/components/researcher/TimelineChart.svelte. The
   original re-renders imperatively inside a Svelte `$effect` whenever
   data/timeRange change — this app has no reactive-effect system, so the
-  two <svg> containers are mounted once as `:opaque` (see dom.cljs) empty
-  shells, and `render!` is called EXPLICITLY by whichever state handler
-  changed the chart's inputs (spirit-ui.views.shared.timeline-visualization's
-  :timeline-loaded and :set-time-range handlers), via state/defer! — same
-  explicit-trigger pattern as spirit-ui.views.web.paper's mount-effects!.
-  Unlike paper.cljc's KaTeX use of :opaque (content that never changes after
-  mount), this opaque subtree's DOM content DOES change over time — just
-  never through the normal IR-diff render cycle, only through `render!`'s
-  direct d3-interop calls. See dom.cljs's :opaque docstring's warning about
-  this exact case (\"a future caller needing periodic updates ... needs a
-  different mechanism\") — this explicit-trigger-per-handler approach IS
-  that different mechanism, deliberately bypassing the diff renderer for
-  this subtree entirely rather than trying to fit it through :opaque's
-  equality-gated skip."
+  two <svg> containers are mounted as `:opaque` (see dom.cljs) shells whose
+  IR is ALWAYS a permanently-empty <svg> — never the actual chart content.
+  `render!` is called EXPLICITLY, out of band from the IR-diff cycle, by
+  EVERY spirit-ui.views.shared.timeline-visualization handler that could
+  invalidate what's currently drawn in the DOM (not just ones that change
+  chart INPUTS): :timeline-loaded and :set-time-range (new data/range), AND
+  :set-active-tab (switching tabs away-and-back destroys/recreates these
+  <svg> nodes via dom.cljs's ordinary unkeyed cond-branch diffing — see
+  timeline_visualization.cljc's view — even though neither the data nor the
+  time-range changed; PR #22's review caught this exact handler having been
+  missed on first pass, leaving the chart permanently blank after a 3D-Space
+  round trip). Same explicit-trigger pattern as spirit-ui.views.web.paper's
+  mount-effects!, but a DIFFERENT contract than that file's :opaque usage:
+  paper.cljc's KaTeX-rendered content lives IN the tracked IR and is
+  protected from re-diffing by equality (content never changes across
+  renders); this <svg> shell's IR never carries real content at all, so the
+  equality check is trivially always true and irrelevant — the actual
+  protection is that `render!` is the ONLY thing that ever touches this
+  subtree's live DOM. CALLER CONTRACT: any FUTURE handler that can cause
+  this component's <svg> nodes to be destroyed and recreated (tab switches,
+  future filter UI, anything that changes the `cond` branch in
+  timeline_visualization.cljc's view) MUST also (defer!) a render-chart!
+  call, or the chart silently goes blank with no error — this is NOT
+  enforced by dom.cljs, a test, or a lint rule; it's the same class of
+  easy-to-violate-unenforced-invariant class as Phase 5's :opaque purity
+  contract."
   (:require [spirit-ui.d3-interop :as d3]
             [spirit-ui.data.emotion-normalization :as emo]
             [spirit-ui.ir :as ir]))
