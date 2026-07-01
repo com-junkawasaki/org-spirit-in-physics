@@ -38,6 +38,15 @@
                  (is (= 404 (.-status response)))
                  (done))))))
 
+(deftest test-health-rejects-non-get-method
+  ;; regression: /api/health and /api/capabilities used to match on path alone
+  ;; (no method guard), so POST/PUT/DELETE would incorrectly return 200.
+  (async done
+    (-> (router/handle (js/Request. "https://example.com/api/health" #js {:method "POST"}) (fake-env))
+        (.then (fn [^js response]
+                 (is (= 501 (.-status response)))
+                 (done))))))
+
 (deftest test-unmatched-api-path-501
   (async done
     (-> (get! "/api/not-a-real-endpoint")

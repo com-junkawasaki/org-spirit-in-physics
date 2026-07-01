@@ -103,12 +103,23 @@
                  (issue-session! db (:id user) req env url
                                   (http/json-response {:user (user->json user)})))))))
 
-(defn- finish-registration! [db ^js req ^js url ^js env ^js body response user challenge]
+(defn- finish-registration!
+  "Only the verify-registration call itself is caught here (matches the TS
+  `try { verified = await verifyRegistration(...) } catch(e) { return 400 }`
+  scope exactly) — errors from the subsequent DB write / session issuance
+  (e.g. a misconfigured SESSION_SECRET) must NOT be reported as a 400
+  \"verification failed\", so they are deliberately left to propagate to the
+  router's generic 500 handler instead of being swallowed by a trailing
+  .catch on this whole chain."
+  [db ^js req ^js url ^js env ^js body response user challenge]
   (let [rp (webauthn/relying-party-for-origin (origin-for req url))]
     (-> (webauthn/verify-registration rp challenge response)
-        (.then (fn [verified] (store-credential-and-issue-session! db req url env body user verified)))
-        (.catch (fn [^js err]
-                  (http/error-response (str "registration verification failed: " (.-message err)) 400))))))
+        (.then (fn [verified] #js [true verified])
+               (fn [^js err] #js [false (str "registration verification failed: " (.-message err))]))
+        (.then (fn [^js result]
+                 (if (aget result 0)
+                   (store-credential-and-issue-session! db req url env body user (aget result 1))
+                   (http/error-response (aget result 1) 400)))))))
 
 (defn- consume-registration-challenge! [db ^js req ^js url ^js env ^js body response user]
   (let [^js inner (.-response response)
@@ -158,20 +169,29 @@
 
 ;; ---------- POST /api/auth/login/verify ----------
 
-(defn- finish-authentication! [db ^js req ^js url ^js env response challenge credential]
+(defn- complete-authentication! [db ^js req ^js url ^js env credential result]
+  (-> (db/touch-credential! db {:id (:id credential) :counter (:new-counter result)
+                                 :last_used_at_ms (js/Date.now)})
+      (.then (fn [_] (db/find-user-by-id db (:user_id credential))))
+      (.then (fn [user]
+               (if-not user
+                 (http/error-response "user not found" 404)
+                 (issue-session! db (:id user) req env url
+                                  (http/json-response {:user (user->json user)})))))))
+
+(defn- finish-authentication!
+  "Only the verify-authentication call itself is caught here — see
+  finish-registration!'s docstring for why the .catch must not also cover the
+  subsequent DB write / session issuance."
+  [db ^js req ^js url ^js env response challenge credential]
   (let [rp (webauthn/relying-party-for-origin (origin-for req url))]
     (-> (webauthn/verify-authentication rp challenge response credential)
-        (.then (fn [result]
-                 (-> (db/touch-credential! db {:id (:id credential) :counter (:new-counter result)
-                                                :last_used_at_ms (js/Date.now)})
-                     (.then (fn [_] (db/find-user-by-id db (:user_id credential))))
-                     (.then (fn [user]
-                              (if-not user
-                                (http/error-response "user not found" 404)
-                                (issue-session! db (:id user) req env url
-                                                 (http/json-response {:user (user->json user)}))))))))
-        (.catch (fn [^js err]
-                  (http/error-response (str "authentication verification failed: " (.-message err)) 400))))))
+        (.then (fn [result] #js [true result])
+               (fn [^js err] #js [false (str "authentication verification failed: " (.-message err))]))
+        (.then (fn [^js outcome]
+                 (if (aget outcome 0)
+                   (complete-authentication! db req url env credential (aget outcome 1))
+                   (http/error-response (aget outcome 1) 400)))))))
 
 (defn- verify-credential! [db ^js req ^js url ^js env response challenge credential-id]
   (-> (db/find-credential-by-id db credential-id)

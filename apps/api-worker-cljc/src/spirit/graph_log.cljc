@@ -6,8 +6,15 @@
   plain sequential Promise pipelines (see ADR:
   90-docs/adr/2607011800-org-spirit-in-physics-api-worker-cljc-port — the
   graphs were linear, no LLM/branching/interrupt use, and D1 persistence was
-  already hand-written per-node rather than via LangGraph's own checkpointer),
-  but these DB writes are kept byte-for-byte identical."
+  already hand-written per-node rather than via LangGraph's own checkpointer).
+  Row shape/trigger points/table targets are kept identical to the TS source;
+  the JSON *key casing* inside input_json/output_json/channel_values_json is
+  NOT byte-identical (this side serializes CLJS's idiomatic kebab-case state
+  keys, e.g. :participant-id, rather than the TS source's camelCase
+  participantId) — these blobs are diagnostic/audit-only, nothing in this
+  codebase parses them back, so this is a deliberate non-goal rather than a
+  bug, but don't rely on exact key names when reading graph_node_events /
+  graph_checkpoints written by this worker vs. the legacy TS one."
   (:require [spirit.db :as db]
             [spirit.util :as util]))
 

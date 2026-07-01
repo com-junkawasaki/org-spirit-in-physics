@@ -1,7 +1,8 @@
 (ns spirit.routes.participants
   "Port of the /api/participants* routes in src/index.ts."
   (:require [spirit.db :as db]
-            [spirit.http :as http]))
+            [spirit.http :as http]
+            [spirit.util :as util]))
 
 (defn- map-participant [row]
   {:id (:id row)
@@ -22,7 +23,7 @@
       (.then (fn [rows] (http/json-response {:participants (mapv map-participant rows)})))))
 
 (defn by-email! [db ^js url]
-  (let [email (http/query-param url "email")]
+  (let [email (util/blank->nil (http/query-param url "email"))]
     (if-not email
       (js/Promise.resolve (http/error-response "email is required" 400))
       (-> (db/find-participant-by-email db email)

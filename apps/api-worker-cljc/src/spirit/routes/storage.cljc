@@ -39,7 +39,8 @@
   (-> (http/parse-json-map req)
       (.then
        (fn [{:keys [participantId fileName fileDataBase64 contentType artifactType sessionIndex]}]
-         (if-not (and participantId fileName fileDataBase64 artifactType)
+         (if-not (and (util/blank->nil participantId) (util/blank->nil fileName)
+                      (util/blank->nil fileDataBase64) (util/blank->nil artifactType))
            (http/error-response
             "participantId, fileName, fileDataBase64, and artifactType are required" 400)
            (let [^js bucket (.-ARTIFACTS env)

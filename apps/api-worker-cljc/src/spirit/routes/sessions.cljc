@@ -1,7 +1,8 @@
 (ns spirit.routes.sessions
   "Port of GET /api/sessions in src/index.ts."
   (:require [spirit.db :as db]
-            [spirit.http :as http]))
+            [spirit.http :as http]
+            [spirit.util :as util]))
 
 (defn- map-artifact [row]
   {:id (:id row) :artifactType (:artifact_type row) :fileName (:file_name row)
@@ -18,7 +19,7 @@
    :artifacts (mapv map-artifact (get artifacts-by-key (session-key row) []))})
 
 (defn list! [db ^js url]
-  (let [participant-id (http/query-param url "participantId")]
+  (let [participant-id (util/blank->nil (http/query-param url "participantId"))]
     (-> (js/Promise.all #js [(db/list-sessions db participant-id) (db/list-artifacts db participant-id)])
         (.then (fn [^js results]
                  (let [sessions (aget results 0)

@@ -4,6 +4,16 @@
 
 (defn gen-uuid [] (.randomUUID js/crypto))
 
+(defn blank->nil
+  "nil or \"\" -> nil, else the string unchanged. ClojureScript's `or`/`if`
+  treat \"\" as truthy (only `nil`/`false` are falsy), unlike the JS `??`/`||`/
+  `!x` idioms the TS source used for required-field checks — every required
+  string param ported from a `!x`-style TS guard must be routed through this
+  first, or an empty-string query param / JSON field silently bypasses
+  validation instead of 400ing."
+  [s]
+  (when-not (or (nil? s) (= s "")) s))
+
 (defn session-index-of
   "Coerce payload.session/sessionIndex/sessionNumber to a session index,
   defaulting to 0. Mirrors the TS `Number(x ?? y ?? z ?? 0) || 0` idiom."

@@ -1,8 +1,10 @@
 (ns spirit.routes.assessments
   "Port of src/graph/assessment.ts. The StateGraph is replaced by a plain
   sequential Promise pipeline (see spirit.graph-log docstring for why); D1
-  writes (assessment_events / sessions / graph_runs / graph_checkpoints /
-  graph_node_events) are kept byte-for-byte identical to the TS source."
+  row shape/trigger points (assessment_events / sessions / graph_runs /
+  graph_checkpoints / graph_node_events) match the TS source, though the
+  audit-log JSON blobs use CLJS kebab-case keys, not TS camelCase — see
+  spirit.graph-log's docstring."
   (:require [spirit.db :as db]
             [spirit.graph-log :as glog]
             [spirit.http :as http]

@@ -21,8 +21,8 @@
 
 (defn- dispatch [^js req ^js env ^js url method path]
   (cond
-    (= path "/api/health") (health/health env)
-    (= path "/api/capabilities") (health/capabilities env)
+    (and (= method "GET") (= path "/api/health")) (health/health env)
+    (and (= method "GET") (= path "/api/capabilities")) (health/capabilities env)
 
     (and (= method "POST") (= path "/api/auth/register/options")) (auth/register-options! (get-db env) req url)
     (and (= method "POST") (= path "/api/auth/register/verify")) (auth/register-verify! (get-db env) req url env)

@@ -32,7 +32,8 @@
                             reaction-value (if (pos? reaction-time-ms)
                                              (js/Number (.toFixed (/ 1 reaction-time-ms) 6))
                                              0)
-                            word (-> (or (:responseWord payload) (stimulus-word-label (:stimulusWordId payload)))
+                            word (-> (or (util/blank->nil (:responseWord payload))
+                                         (stimulus-word-label (:stimulusWordId payload)))
                                      str .trim)]
                         {:time (.toISOString (js/Date. (:created_at_ms event)))
                          :participantId (:participant_id event)
@@ -231,7 +232,7 @@
 ;; ---------- routes ----------
 
 (defn- run-timeline! [db ^js url response-fn]
-  (let [participant-id (http/query-param url "participantId")]
+  (let [participant-id (util/blank->nil (http/query-param url "participantId"))]
     (if-not participant-id
       (js/Promise.resolve (http/error-response "participantId is required" 400))
       (let [session-index (util/parse-session-index (http/query-param url "sessionId"))]
