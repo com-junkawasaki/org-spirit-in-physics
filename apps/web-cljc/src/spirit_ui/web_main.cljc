@@ -55,7 +55,13 @@
   (state/register-handler! :set-field
     (fn [s field-path value]
       (assoc-in s (into [:form] (if (vector? field-path) field-path [field-path])) value)))
+  (state/register-handler! :toggle-medical-history
+    (fn [s code checked?]
+      (update-in s [:form :demographics :medical-history]
+                 (fn [selected] (let [selected (or selected #{})]
+                                  (if checked? (conj selected code) (disj selected code)))))))
   (state/register-handler! :session-loaded (fn [s user] (assoc s :user user)))
+  (state/register-handler! :set-theme (fn [s theme] (assoc-in s [:settings :theme] theme)))
   (state/register-handler! :logout!
     (fn [s]
       (state/dispatch! (fn [_ dispatch!]

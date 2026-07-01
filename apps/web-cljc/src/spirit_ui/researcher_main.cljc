@@ -73,7 +73,17 @@
       (state/dispatch! (fn [_ dispatch!]
                           (-> (api/logout!) (.then (fn [_] (dispatch! [:session-loaded nil]))))))
       s))
-  (state/register-handler! :login-prompt (fn [s] s)))
+  (state/register-handler! :login-prompt
+    ;; researcher has no /consent-equivalent registration page — prompt the
+    ;; WebAuthn passkey login ceremony directly (no email hint -> browser
+    ;; shows any registered passkey).
+    (fn [s]
+      (state/dispatch!
+       (fn [_ dispatch!]
+         (-> (api/login! nil)
+             (.then (fn [{:keys [body]}] (dispatch! [:session-loaded (:user body)])))
+             (.catch (fn [^js err] (js/console.error "login failed:" (.-message err)))))))
+      s)))
 
 (defn- on-navigate! [path]
   (state/dispatch! [:route-changed path])

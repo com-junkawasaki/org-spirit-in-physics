@@ -7,12 +7,12 @@
 
 (defn- artifact-icon [artifact-type]
   (case artifact-type
-    "video" "video" "image" "image" "csv" "csv" "audio" "audio"
-    "file"))
+    "video" "🎥" "image" "🖼️" "csv" "📊" "audio" "🎙️"
+    "📁"))
 
 (defn- artifact-chip [a]
   (ir/el :a {:key (:id a) :href (:publicUrl a) :class "artifact-chip" :target "_blank"}
-         (str "[" (artifact-icon (:artifactType a)) "] " (:fileName a))))
+         (str (artifact-icon (:artifactType a)) " " (:fileName a))))
 
 (defn- session-card [s]
   (ir/el :div {:key (:id s) :class "session-card"}

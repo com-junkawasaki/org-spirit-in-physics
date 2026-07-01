@@ -6,7 +6,22 @@
   reuse+reorder, and a persistent-listener event-handling scheme (one native
   addEventListener per DOM node per event type; the listener reads whatever
   action-spec is CURRENTLY stored on the node, so re-renders that change a
-  handler never need to add/removeEventListener).")
+  handler never need to add/removeEventListener).
+
+  CALLER CONTRACT — same caveat as React's own documented behavior for
+  unkeyed lists: any `:ui/children` list that can grow, shrink, or reorder
+  between renders (not just have its EXISTING items' content change) MUST
+  give every item an explicit `:key` (via `ir/el`'s `attrs {:key ...}`).
+  Without one, `child-key` falls back to positional index — inserting/
+  removing/reordering items then reassigns which OLD DOM node each position
+  reuses, which for a list of live inputs can attach a re-rendered node's new
+  value/handler to a DOM element the user is mid-interaction with (e.g.
+  actively focused/typing in) — the content ends up looking right, but
+  whichever logical field the browser's focus/composition state was
+  attached to is now wired to a different field. Static/append-only/
+  content-only-changes lists are fine unkeyed; see e.g.
+  `views/web/consent.cljc`'s `agreement-fields` (static 4 items, still keyed
+  defensively) vs any future dynamically-added-row UI (MUST key).")
 
 ;; ---------- events ----------
 
@@ -19,7 +34,16 @@
 (defn- resolve-event-action
   "If action-spec is a vector ending in a recognized :target/* keyword,
   replace that keyword with the extracted event value; otherwise dispatch
-  action-spec unchanged."
+  action-spec unchanged.
+
+  CAVEAT: detection is purely structural (peek action-spec) — an action
+  vector whose real, intentional last argument happens to equal one of these
+  4 keywords (e.g. a literal `[:set-mode :target/value]` meant to set an
+  enum) would have that argument silently replaced by the extracted DOM
+  value instead. No call site in this codebase does that today (forms.cljc
+  always `conj`s the extractor itself), but a future handler authored by
+  hand must avoid ending an action vector in a bare `:target/*` keyword
+  unless it IS meant as an extractor."
   [action-spec ^js event]
   (if (and (vector? action-spec) (contains? target-extractors (peek action-spec)))
     (conj (pop action-spec) ((target-extractors (peek action-spec)) event))
@@ -101,8 +125,17 @@
           (.appendChild node child-node)))
       node)))
 
-(defn- child-key [ir idx]
-  (if (and (map? ir) (some? (:ui/key ir))) (:ui/key ir) idx))
+(defn child-key
+  "Positional fallback keys are tagged `[::idx N]`, NOT the bare integer N —
+  an explicit `:ui/key` supplied by a caller could itself be a small integer
+  (e.g. `:key 0`), and a bare-integer positional key would collide with it:
+  two siblings, one with no :key (falls back to position 0) and one with an
+  explicit `:key 0`, would resolve to the identical map key, so `old-map`'s
+  `into {}` build silently drops one of them (see spirit-ui.dom's ns
+  docstring for the concrete corrupted-render trace). Tagging makes
+  collision with any realistic caller-supplied key essentially impossible."
+  [ir idx]
+  (if (and (map? ir) (some? (:ui/key ir))) (:ui/key ir) [::idx idx]))
 
 (declare patch!)
 
@@ -185,7 +218,11 @@
               (let [new-ir (render-fn state)]
                 (if @prev-node
                   (vreset! prev-node (patch! @prev-node @prev-ir new-ir dispatch!))
-                  (let [node (create-dom! new-ir dispatch!)]
+                  ;; nil-guard: render-fn returning nil on a render where
+                  ;; there's no existing prev-node (first mount, or the
+                  ;; render right after a prior nil-render already .remove!d
+                  ;; it) must not call appendChild with nil.
+                  (when-let [node (create-dom! new-ir dispatch!)]
                     (.appendChild root-el node)
                     (vreset! prev-node node)))
                 (vreset! prev-ir new-ir)))]

@@ -67,7 +67,16 @@
        (doseq [f @listeners] (f path)))
 
      (defn navigate!
-       "Push a new path onto history and notify listeners (no full page load)."
+       "Push a new path onto history and notify listeners (no full page load).
+       CALLER GOTCHA: `notify!` synchronously calls every `on-route-change!`
+       listener, which typically calls `state/dispatch!` with an action
+       vector — if THIS function is itself called synchronously from inside
+       a spirit-ui.state registered handler (which dispatch! wraps in
+       swap!), that nested dispatch! gets clobbered by the outer swap!
+       completing with stale state (see spirit-ui.state's dispatch!
+       docstring GOTCHA). Callers inside a registered handler MUST wrap this
+       call in `state/defer!` — see web_main.cljc/researcher_main.cljc's
+       :navigate handlers for the pattern."
        [path]
        (when (not= path (current-path))
          (.pushState js/history nil "" path))
@@ -75,7 +84,11 @@
 
      (defn replace!
        "Like navigate! but replaces the current history entry (no back-button
-       stop) — for redirects, e.g. post-login."
+       stop) — for redirects, e.g. post-login. Same `state/defer!` GOTCHA as
+       navigate! applies (currently unused/dead code in this PR, so it has
+       never needed the wrapper — but a future caller from inside a
+       registered handler will reproduce the bug navigate! had until it was
+       fixed)."
        [path]
        (.replaceState js/history nil "" path)
        (notify! path))

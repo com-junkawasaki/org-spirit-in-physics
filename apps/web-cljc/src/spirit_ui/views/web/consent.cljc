@@ -2,11 +2,14 @@
   "Simplified port of apps/web/src/lib/components/ConsentForm.svelte (shared
   by experiment/consent and participant/consent). The original is a 4-step
   wizard with an illness-code autosuggest+chips UI; this Phase 2 slice
-  collapses it to a single-page form with the same fields, to prove
-  forms.cljc + the real POST /api/participants round-trip against
-  api-worker-cljc — the multi-step wizard UX and autosuggest are a follow-up
-  visual-parity pass, not a data-shape change (illness-codes data itself is
-  already ported, see spirit-ui.data.illness-codes)."
+  collapses the STEPS into a single page (that part genuinely is not a
+  data-shape change) but keeps medical-history as a real multi-select
+  (checkbox group -> vector of codes), matching the backend/schema's
+  `medicalHistory: string[]` exactly — the autosuggest-with-chips
+  *presentation* for a 32-option list is a follow-up visual-parity pass, not
+  a data-shape change; the original single-select earlier draft of this file
+  WAS a data-shape regression (silently truncated to 1 code) and has been
+  fixed."
   (:require [spirit-ui.api-client :as api]
             [spirit-ui.data.illness-codes :as illness]
             [spirit-ui.forms :as forms]
@@ -23,8 +26,10 @@
                                ["50k-75k" "$50k-$75k"] ["75k-100k" "$75k-$100k"]
                                ["100k-150k" "$100k-$150k"] ["over-150k" "Over $150k"]
                                ["prefer-not-to-say" "Prefer not to say"]])
-(def ^:private medical-history-options
-  (into [["" "None"]] (map (fn [c] [(:code c) (str (:name-en c) " (" (:code c) ")")])) illness/illness-codes))
+;; excludes the data's own "None" sentinel row — absence of any checkbox
+;; checked already means "none", matching the backend's `medicalHistory: []`.
+(def ^:private medical-history-codes
+  (remove #(= (:code %) "None") illness/illness-codes))
 
 (def ^:private agreement-fields
   [[:understand "I understand the purpose and procedures of this study."]
@@ -36,8 +41,8 @@
   (every? #(get-in form [:agreements (first %)]) agreement-fields))
 
 (defn- demographics-complete? [form]
-  (and (seq (get-in form [:demographics :age-group]))
-       (seq (get-in form [:demographics :gender]))))
+  (let [d (:demographics form)]
+    (and (seq (:age-group d)) (seq (:gender d)) (seq (:ethnicity d)) (seq (:income-range d)))))
 
 (defn- consent-payload [{:keys [form user]}]
   (let [d (:demographics form)]
@@ -47,7 +52,7 @@
      :gender (:gender d)
      :ethnicity (:ethnicity d)
      :incomeRange (:income-range d)
-     :medicalHistory (if (seq (:medical-history d)) [(:medical-history d)] [])
+     :medicalHistory (vec (:medical-history d))
      :isPublic true}))
 
 (defn- submit-consent! [state dispatch!]
@@ -95,10 +100,14 @@
               (forms/select {:value (get-in form [:demographics :income-range])
                               :on-change [:set-field [:demographics :income-range]]
                               :options income-ranges})
-              (ir/el :label {} "Relevant medical history (optional)")
-              (forms/select {:value (get-in form [:demographics :medical-history])
-                              :on-change [:set-field [:demographics :medical-history]]
-                              :options medical-history-options}))
+              (ir/el :label {} "Relevant medical history (optional, select any that apply)")
+              (ir/el :div {:class "medical-history-list"}
+                     (let [selected (get-in form [:demographics :medical-history] #{})]
+                       (for [c medical-history-codes]
+                         (forms/checkbox {:key (:code c)
+                                           :checked (contains? selected (:code c))
+                                           :on-change [:toggle-medical-history (:code c)]
+                                           :label (str (:name-en c) " (" (:code c) ")")})))))
 
        (when-not user
          (ir/el :section {}

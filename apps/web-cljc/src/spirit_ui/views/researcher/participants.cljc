@@ -14,7 +14,10 @@
 
 (defn- row [p]
   (ir/el :tr {:key (:id p)}
-         (ir/el :td {} (if (:isPublic p) "public" "private"))
+         ;; "Status" mirrors the original ParticipantList.svelte's static
+         ;; participation badge (participants have no distinct status field,
+         ;; unlike sessions) — NOT the same value as the Visibility column.
+         (ir/el :td {} "active")
          (ir/el :td {}
                 (ir/el :a {:href (str "/participants/" (:id p))
                            :ui/on {:click [:prevent-default! [:navigate (str "/participants/" (:id p))]]}}

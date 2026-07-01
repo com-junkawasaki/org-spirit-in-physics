@@ -25,8 +25,8 @@
          (or value "")))
 
 (defn checkbox
-  [{:keys [checked on-change label id]}]
-  (ir/el :label {:class "spirit-checkbox"}
+  [{:keys [checked on-change label id key]}]
+  (ir/el :label {:class "spirit-checkbox" :key key}
          (ir/el :input {:type "checkbox" :checked (boolean checked) :id id
                         :ui/on {:change (conj on-change :target/checked)}})
          label))
