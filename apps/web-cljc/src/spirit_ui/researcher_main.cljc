@@ -13,7 +13,8 @@
             [spirit-ui.views.researcher.participants :as participants]
             [spirit-ui.views.researcher.sessions :as sessions]
             [spirit-ui.views.researcher.settings :as settings]
-            [spirit-ui.views.shared.nav :as nav]))
+            [spirit-ui.views.shared.nav :as nav]
+            [spirit-ui.views.shared.timeline-visualization :as timeline-viz]))
 
 (def routes
   [(router/compile-route :participant-detail "/participants/:id")
@@ -68,6 +69,7 @@
   (state/register-handler! :select-participant
     (fn [s id] (assoc-in s [:form :selected-participant-id] id)))
   (state/register-handler! :session-loaded (fn [s user] (assoc s :user user)))
+  (timeline-viz/register-handlers!)
   (state/register-handler! :logout!
     (fn [s]
       (state/dispatch! (fn [_ dispatch!]
@@ -91,6 +93,7 @@
     :dashboard (state/dispatch! load-participants!)
     :participants (state/dispatch! load-participants!)
     :sessions (state/dispatch! load-sessions!)
+    :participant-detail (state/dispatch! (timeline-viz/load-timeline! (get-in @state/app-state [:route :id])))
     nil))
 
 (defn init! []

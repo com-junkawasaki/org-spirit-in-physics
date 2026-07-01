@@ -43,6 +43,15 @@
   ([] (get! "/sessions"))
   ([participant-id] (get! (str "/sessions?participantId=" (js/encodeURIComponent participant-id)))))
 
+;; ---------- timeline ----------
+
+(defn get-integrated-timeline!
+  "-> Promise<{:ok :status :body {:points [...] :analysis {...}}}>. Backend
+  (spirit.routes.timeline/integrated!) always returns :points with empty
+  :emotions/:physiological (that pipeline isn't wired server-side yet) —
+  not a client bug, see timeline_chart.cljc's docstring."
+  [participant-id] (get! (str "/timeline/integrated?participantId=" (js/encodeURIComponent participant-id))))
+
 ;; ---------- auth ----------
 
 (defn me! [] (get! "/auth/me"))
