@@ -1,0 +1,30 @@
+;; apps/api-worker-cljc — CLJC port of apps/api-worker (Hono BFF) per
+;; 90-docs/adr/2607011800-org-spirit-in-physics-api-worker-cljc-port.md (superproject),
+;; following Pattern B (:esm fetch worker) from
+;; 90-docs/adr/2606290000-all-workers-cljc-only-policy.md, modeled on app-aozora appview.
+;;
+;; test:  npm test              (cljs.test → out/worker-tests.cjs)
+;; build: npm run build:worker  (shadow-cljs release worker → ESM Worker module)
+{:source-paths
+ ["src" "test"]
+
+ :builds
+ {:worker-test
+  ;; .cjs (not .js): :node-test output is CommonJS, but package.json has
+  ;; "type": "module" for the :esm worker build — .cjs forces Node to treat
+  ;; this specific file as CommonJS regardless.
+  {:target :node-test
+   :output-to "out/worker-tests.cjs"
+   :ns-regexp "-test$"}
+
+  ;; api-worker — Cloudflare Worker (workerd) ESM module.
+  ;; `export { default }` = spirit.worker/handler (a { fetch } object).
+  ;; :js-provider :import — @simplewebauthn/server ships JS shadow-cljs's own
+  ;; (Closure-based) parser can't handle (`await` in a default param value).
+  ;; :import defers npm resolution to a native `import` in the output, which
+  ;; `wrangler deploy`'s own esbuild bundling pass resolves at deploy time.
+  :worker
+  {:target :esm
+   :js-options {:js-provider :import}
+   :output-dir "out"
+   :modules {:worker {:exports {default spirit.worker/handler}}}}}}

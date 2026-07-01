@@ -1,0 +1,39 @@
+{
+  // CLJC port of ../api-worker (see 90-docs/adr/2607011800-... in the superproject).
+  // Build first: `npm run build:worker` → out/worker.js (ESM, exports default {fetch}).
+  // Parity phase: no production `routes` yet — deployed only under *.workers.dev
+  // for side-by-side comparison against the live TS worker. Cutover (adding the
+  // spirit-in-physics.com/api/* routes and retiring this `name`) is a separate,
+  // explicitly-confirmed step per the ADR's cutover guardrail.
+  //
+  // WebAuthn / passkey auth (ported 1:1 from apps/api-worker):
+  //   - D1 tables: users / webauthn_credentials / webauthn_challenges / auth_sessions
+  //   - Endpoints: POST /api/auth/{register,login}/{options,verify}, POST /api/auth/logout, GET /api/auth/me
+  //   - Required secret: SESSION_SECRET (HMAC key for sip_session cookie)
+  //     Set with: wrangler secret put SESSION_SECRET   (>= 32 random chars recommended)
+  "name": "spirit-in-physics-api-cljc",
+  "account_id": "4da88288dc30d9ee257f319d3c33ecf0",
+  "main": "out/worker.js",
+  "compatibility_date": "2026-04-12",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "spirit-in-physics",
+      "database_id": "f52a6c82-1f2a-444b-9ee6-a241b61bcbe5",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ARTIFACTS",
+      "bucket_name": "spirit-in-physics-artifacts"
+    }
+  ],
+  "vars": {
+    "API_MODE": "worker-partial"
+  }
+}
