@@ -28,3 +28,22 @@
 
 (deftest test-child-key-text-node-children-use-positional
   (is (not= (dom/child-key "some text" 0) (dom/child-key "some text" 1))))
+
+(deftest test-child-key-unkeyed-optional-child-shifts-positional-siblings
+  ;; The bug this guards against (found live, browser-testing
+  ;; views/web/paper.cljc's TOC toggle): an unkeyed `(when cond? ...)`
+  ;; optional child among unkeyed siblings changes the SIBLING LIST LENGTH
+  ;; between renders — sibling B's positional key shifts from index 1 to
+  ;; index 2 the moment the optional child at index 1 appears, so
+  ;; patch-children!'s old-map (keyed by the OLD render's positions) matches
+  ;; the wrong old node against B's new position, and everything after the
+  ;; insertion point misreads a differently-tagged node as itself (see
+  ;; dom.cljs's ns docstring's unkeyed-list CALLER CONTRACT). Explicit keys
+  ;; (paper.cljc's fix) keep each sibling's key stable regardless of what's
+  ;; inserted/removed around it.
+  (let [sibling-b {:ui/tag :nav :ui/attrs {}}]
+    (is (not= (dom/child-key sibling-b 1) (dom/child-key sibling-b 2))
+        "unkeyed: B's identity changes when its position shifts — the bug")
+    (let [keyed-b (assoc sibling-b :ui/key :toc-sidebar)]
+      (is (= (dom/child-key keyed-b 1) (dom/child-key keyed-b 2))
+          "keyed: B's identity survives a position shift — the fix"))))
