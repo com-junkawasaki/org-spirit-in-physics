@@ -1,0 +1,109 @@
+(ns spirit-ui.data.jung-stimulus-words
+  "Port of pkg/experiment/src/jung-stimulus-words.ts — 100-item Jung
+  word-association stimulus list (same data as
+  apps/api-worker-cljc/src/spirit/stimulus_words.cljc; duplicated here since
+  frontend/backend are separate shadow-cljs projects). Pure EDN data.")
+
+(def jung-stimulus-words
+  [
+   {:id 1 :japanese "頭" :english "head" :pronunciation "あたま"}
+   {:id 2 :japanese "緑" :english "green" :pronunciation "みどり"}
+   {:id 3 :japanese "水" :english "water" :pronunciation "みず"}
+   {:id 4 :japanese "歌う" :english "to sing" :pronunciation "うたう"}
+   {:id 5 :japanese "亡くなる" :english "death" :pronunciation "なくなる"}
+   {:id 6 :japanese "長い" :english "long" :pronunciation "ながい"}
+   {:id 7 :japanese "船" :english "ship" :pronunciation "ふね"}
+   {:id 8 :japanese "支払い" :english "to pay" :pronunciation "しはらい"}
+   {:id 9 :japanese "窓" :english "window" :pronunciation "まど"}
+   {:id 10 :japanese "親切な" :english "friendly" :pronunciation "しんせつ"}
+   {:id 11 :japanese "机" :english "table" :pronunciation "つくえ"}
+   {:id 12 :japanese "聞く" :english "to ask" :pronunciation "きく"}
+   {:id 13 :japanese "村" :english "village" :pronunciation "むら"}
+   {:id 14 :japanese "冷たい" :english "cold" :pronunciation "つめたい"}
+   {:id 15 :japanese "茎" :english "stem" :pronunciation "きく"}
+   {:id 16 :japanese "踊る" :english "to dance" :pronunciation "おどる"}
+   {:id 17 :japanese "海" :english "lake" :pronunciation "うみ"}
+   {:id 18 :japanese "病気" :english "sick" :pronunciation "びょうき"}
+   {:id 19 :japanese "プライド" :english "pride" :pronunciation "プライド"}
+   {:id 20 :japanese "料理" :english "to cook" :pronunciation "りょうり"}
+   {:id 21 :japanese "インク" :english "ink" :pronunciation "インク"}
+   {:id 22 :japanese "怒り" :english "angry" :pronunciation "いかり"}
+   {:id 23 :japanese "針" :english "needle" :pronunciation "はり"}
+   {:id 24 :japanese "泳ぐ" :english "to swim" :pronunciation "およぐ"}
+   {:id 25 :japanese "旅行" :english "journey" :pronunciation "りょこう"}
+   {:id 26 :japanese "青い" :english "blue" :pronunciation "あおい"}
+   {:id 27 :japanese "電気" :english "lamp" :pronunciation "でんき"}
+   {:id 28 :japanese "罪" :english "to sin" :pronunciation "つみ"}
+   {:id 29 :japanese "ご飯" :english "bread" :pronunciation "ごはん"}
+   {:id 30 :japanese "金持ち" :english "rich" :pronunciation "かねもち"}
+   {:id 31 :japanese "木" :english "tree" :pronunciation "き"}
+   {:id 32 :japanese "刺す" :english "to prick" :pronunciation "さす"}
+   {:id 33 :japanese "同情" :english "pity" :pronunciation "どうじょう"}
+   {:id 34 :japanese "黄色" :english "yellow" :pronunciation "きいろ"}
+   {:id 35 :japanese "山" :english "mountain" :pronunciation "やま"}
+   {:id 36 :japanese "死ぬ" :english "to die" :pronunciation "しぬ"}
+   {:id 37 :japanese "塩" :english "salt" :pronunciation "しお"}
+   {:id 38 :japanese "新しい" :english "new" :pronunciation "あたらしい"}
+   {:id 39 :japanese "癖" :english "custom" :pronunciation "くせ"}
+   {:id 40 :japanese "祈る" :english "to pray" :pronunciation "いのる"}
+   {:id 41 :japanese "お金" :english "money" :pronunciation "おかね"}
+   {:id 42 :japanese "馬鹿" :english "stupid" :pronunciation "ばか"}
+   {:id 43 :japanese "ノート" :english "exercise-book" :pronunciation "ノート"}
+   {:id 44 :japanese "軽蔑" :english "to despise" :pronunciation "けいべつ"}
+   {:id 45 :japanese "指" :english "finger" :pronunciation "ゆび"}
+   {:id 46 :japanese "高価な" :english "dear" :pronunciation "こうかな"}
+   {:id 47 :japanese "鳥" :english "bird" :pronunciation "とり"}
+   {:id 48 :japanese "落ちる" :english "to fall" :pronunciation "おちる"}
+   {:id 49 :japanese "本" :english "book" :pronunciation "ほん"}
+   {:id 50 :japanese "不正" :english "unjust" :pronunciation "ふせい"}
+   {:id 51 :japanese "蛙" :english "frog" :pronunciation "かえる"}
+   {:id 52 :japanese "別れる" :english "to part" :pronunciation "わかれる"}
+   {:id 53 :japanese "空腹" :english "hunger" :pronunciation "くうふく"}
+   {:id 54 :japanese "白い" :english "white" :pronunciation "しろい"}
+   {:id 55 :japanese "子供" :english "child" :pronunciation "こども"}
+   {:id 56 :japanese "注意" :english "to pay attention" :pronunciation "ちゅうい"}
+   {:id 57 :japanese "鉛筆" :english "pencil" :pronunciation "えんぴつ"}
+   {:id 58 :japanese "悲しい" :english "sad" :pronunciation "かなしい"}
+   {:id 59 :japanese "りんご" :english "plum" :pronunciation "りんご"}
+   {:id 60 :japanese "結婚" :english "to marry" :pronunciation "けっこん"}
+   {:id 61 :japanese "家" :english "house" :pronunciation "いえ"}
+   {:id 62 :japanese "かわいい" :english "darling" :pronunciation "かわいい"}
+   {:id 63 :japanese "ガラス" :english "glass" :pronunciation "ガラス"}
+   {:id 64 :japanese "争う" :english "to quarrel" :pronunciation "あらそう"}
+   {:id 65 :japanese "毛皮" :english "fur" :pronunciation "けがわ"}
+   {:id 66 :japanese "大きい" :english "big" :pronunciation "おおきい"}
+   {:id 67 :japanese "人参" :english "carrot" :pronunciation "にんじん"}
+   {:id 68 :japanese "塗る" :english "to paint" :pronunciation "ぬる"}
+   {:id 69 :japanese "部分" :english "part" :pronunciation "ぶぶん"}
+   {:id 70 :japanese "古い" :english "old" :pronunciation "ふるい"}
+   {:id 71 :japanese "花" :english "flower" :pronunciation "はな"}
+   {:id 72 :japanese "打つ" :english "to beat" :pronunciation "うつ"}
+   {:id 73 :japanese "箱" :english "box" :pronunciation "はこ"}
+   {:id 74 :japanese "荒い" :english "wild" :pronunciation "あらい"}
+   {:id 75 :japanese "家族" :english "family" :pronunciation "かぞく"}
+   {:id 76 :japanese "洗う" :english "to wash" :pronunciation "あらう"}
+   {:id 77 :japanese "牛" :english "cow" :pronunciation "うし"}
+   {:id 78 :japanese "変" :english "friend （誤訳？）" :pronunciation "へん"}
+   {:id 79 :japanese "幸運" :english "happiness" :pronunciation "こううん"}
+   {:id 80 :japanese "嘘" :english "lie" :pronunciation "うそ"}
+   {:id 81 :japanese "礼儀" :english "deportment" :pronunciation "れいぎ"}
+   {:id 82 :japanese "狭い" :english "narrow" :pronunciation "せまい"}
+   {:id 83 :japanese "兄弟" :english "brother" :pronunciation "きょうだい"}
+   {:id 84 :japanese "怖がる" :english "to fear" :pronunciation "こわがる"}
+   {:id 85 :japanese "コウノトリ" :english "stork" :pronunciation "こうのとり"}
+   {:id 86 :japanese "間違い" :english "FALSE" :pronunciation "まちがい"}
+   {:id 87 :japanese "心配" :english "anxiety" :pronunciation "しんぱい"}
+   {:id 88 :japanese "キス" :english "to kiss" :pronunciation "キス"}
+   {:id 89 :japanese "花嫁" :english "bride" :pronunciation "はなよめ"}
+   {:id 90 :japanese "純粋な" :english "pure" :pronunciation "じゅんすいな"}
+   {:id 91 :japanese "ドア" :english "door" :pronunciation "ドア"}
+   {:id 92 :japanese "選ぶ" :english "to choose" :pronunciation "えらぶ"}
+   {:id 93 :japanese "干し草" :english "hay" :pronunciation "ほしくさ"}
+   {:id 94 :japanese "嬉しい" :english "contented" :pronunciation "うれしい"}
+   {:id 95 :japanese "虐める" :english "ridicule" :pronunciation "いじめる"}
+   {:id 96 :japanese "眠る" :english "to sleep" :pronunciation "ねむる"}
+   {:id 97 :japanese "年月" :english "month" :pronunciation "ねんげつ"}
+   {:id 98 :japanese "きれいな" :english "nice" :pronunciation "きれいな"}
+   {:id 99 :japanese "女" :english "woman" :pronunciation "おんな"}
+   {:id 100 :japanese "侮辱" :english "to abuse" :pronunciation "ぶじょく"}
+   ])

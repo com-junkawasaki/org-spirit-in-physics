@@ -1,0 +1,42 @@
+;; apps/web-cljc — CLJC port of apps/web + apps/researcher (SvelteKit) per
+;; 90-docs/adr/2607012100-org-spirit-in-physics-web-cljc-port.md (superproject),
+;; Pattern A (assets-only SPA, cljc-ui-IR) from
+;; 90-docs/adr/2606290000-all-workers-cljc-only-policy.md.
+;;
+;; Two separate SPA builds (matching the existing separate-domain deployment:
+;; spirit-in-physics.com vs researcher.spirit-in-physics.com) sharing one
+;; cljc-ui-IR core (src/spirit_ui/{ir,dom,router,state,api_client,forms}.cljc).
+;;
+;; test:  npm test               (cljs.test → out/web-tests.cjs)
+;; build: npm run build:web      (shadow-cljs release web → public/web/js/main.js)
+;;        npm run build:researcher
+{:source-paths
+ ["src" "test"]
+
+ :builds
+ {:web-test
+  {:target :node-test
+   :output-to "out/web-tests.cjs"
+   :ns-regexp "-test$"}
+
+  ;; NOTE: unlike apps/api-worker-cljc, these :browser builds do NOT set
+  ;; :js-provider :import — there's no downstream bundler (wrangler/esbuild)
+  ;; for a plain static-assets SPA to resolve a passthrough `import` against,
+  ;; so a bare npm specifier left unbundled is dead in a real browser
+  ;; (confirmed: with :js-provider :import, `startRegistration`/
+  ;; `startAuthentication` silently vanished from the release output —
+  ;; 0 occurrences of "simplewebauthn"/"startRegistration" in main.js).
+  ;; shadow-cljs's default :js-provider (its own npm bundler) handles
+  ;; @simplewebauthn/browser fine — unlike @simplewebauthn/server, this
+  ;; package's bundle has no `await`-in-default-param syntax to choke on.
+  :web
+  {:target :browser
+   :output-dir "public/web/js"
+   :asset-path "/js"
+   :modules {:main {:init-fn spirit-ui.web-main/init!}}}
+
+  :researcher
+  {:target :browser
+   :output-dir "public/researcher/js"
+   :asset-path "/js"
+   :modules {:main {:init-fn spirit-ui.researcher-main/init!}}}}}

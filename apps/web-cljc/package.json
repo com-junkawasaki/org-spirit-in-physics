@@ -1,0 +1,26 @@
+{
+  "name": "@spirit/web-cljc",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "org-spirit-in-physics apps/web + apps/researcher, CLJC port (shadow-cljs :browser, cljc-ui-IR, Pattern A assets-only SPA)",
+  "scripts": {
+    "test": "shadow-cljs compile web-test && node out/web-tests.cjs",
+    "watch-test": "shadow-cljs watch web-test",
+    "build:web": "shadow-cljs release web",
+    "watch:web": "shadow-cljs watch web",
+    "build:researcher": "shadow-cljs release researcher",
+    "watch:researcher": "shadow-cljs watch researcher",
+    "build": "shadow-cljs release web researcher",
+    "verify": "shadow-cljs compile web-test && node out/web-tests.cjs && shadow-cljs release web researcher",
+    "serve:web": "sirv-cli public/web --single --port 5173",
+    "serve:researcher": "sirv-cli public/researcher --single --port 5174"
+  },
+  "devDependencies": {
+    "shadow-cljs": "^2.28.3",
+    "sirv-cli": "^3.0.1"
+  },
+  "dependencies": {
+    "@simplewebauthn/browser": "^11.0.0"
+  }
+}
