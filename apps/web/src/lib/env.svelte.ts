@@ -1,22 +1,22 @@
-import { env } from '$env/dynamic/public';
 import { browser } from '$app/environment';
 
 // Helper to get env from window.ENV (injected at runtime in static builds)
 const getEnv = (key: string, defaultValue: string = ''): string => {
-    if (browser && (window as any).ENV?.[key] && (window as any).ENV[key] !== `__${key}__` && (window as any).ENV[key] !== "") {
-        return (window as any).ENV[key];
+    const runtimeEnv = browser ? (window as any).ENV : undefined;
+    if (runtimeEnv?.[key] && runtimeEnv[key] !== `__${key}__` && runtimeEnv[key] !== "") {
+        return runtimeEnv[key];
     }
-    if (key === 'PUBLIC_API_URL' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
+    if (key === 'PUBLIC_API_URL') {
         // For Capacitor iOS Simulator, use localhost
         if (browser && (window as any).Capacitor !== undefined) {
             return "http://localhost:8080";
         }
         return "/api";
     }
-    if (key === 'PUBLIC_API_MODE' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
+    if (key === 'PUBLIC_API_MODE') {
         return "worker-partial";
     }
-    return (env as any)[key] || defaultValue;
+    return defaultValue;
 };
 
 export const runtimeConfig = {

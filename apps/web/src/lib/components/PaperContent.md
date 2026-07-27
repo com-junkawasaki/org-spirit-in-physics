@@ -67,17 +67,29 @@
 {m.theory_text_2_2()}
 
 <div class="equation-block">
-  $ S = &#92;&#123;V, E, T&#92;&#125; $
+  $ S = &#92;&#123;X, E, T, &#92;mathcal&#123;G&#125;&#92;&#125; $
   
   <p class="equation-desc">
-    {m.theory_equation_desc_1()}
+    Spirit is now defined as a tensor field plus its energy, time evolution, and induced geometry/topology. The earlier vector model is retained as a projection for visualization.
   </p>
 </div>
 
-The energy potential of an edge connecting two informational vertices ($w_I, w_O$) is defined as the negative logarithm of their association probability, reflecting the information content or "surprise" of their connection:
+The canonical observation is a multi-way tensor that binds participant, session, word pair, modality, feature, and time:
 
 <div class="equation-block">
-  $ E = -&#92;ln P(w_O | w_I),&#92;; V = &#92;&#123;&#92;vec&#123;w_I&#125;, &#92;vec&#123;w_O&#125;, ...&#92;&#125;,&#92;; T = &#92;text&#123;time axis&#125; $
+  $ X[p,s,w,m,f,t] $
+</div>
+
+The energy potential of an informational response is defined as surprisal under semantic, bodily, affective, and contextual state:
+
+<div class="equation-block">
+  $ E(w_I,w_O) = -&#92;ln P(w_O | w_I, B, C) $
+</div>
+
+The previous word vector representation is a projection from this tensor:
+
+<div class="equation-block">
+  $ &#92;vec&#123;v&#125;_w = &#92;Pi(X[p,:,w,:,:,:]) $
 </div>
 
 {m.theory_text_2_2_2()}
@@ -136,18 +148,21 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 {m.measurement_text_1()}
 
 <div class="equation-block large">
-  $$ P(w_O | w_I) = &#92;frac&#123;&#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;) &#92;cdot [r(w_I, w_O)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125;&#123;&#92;sum_&#123;j&#125; &#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_j&#125;) &#92;cdot [r(w_I, w_j)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125; $$
+  $$ P(w_O | w_I,B,C) = &#92;frac&#123;&#92;exp(&#92;mathcal&#123;C&#125;(X_&#123;lang&#125;,X_&#123;body&#125;,X_&#123;affect&#125;,X_&#123;context&#125;)) &#92;cdot [r(w_I, w_O)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125;&#123;Z&#125; $$
 </div>
 
 <div class="component-list">
   <div class="component-item">
-    <strong>{m.semantic_component_title()} (&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;):</strong> {m.semantic_component_text()}
+    <strong>{m.semantic_component_title()} ($X_&#123;lang&#125;$):</strong> semantic association is one mode of the tensor rather than the full model.
   </div>
   <div class="component-item">
     <strong>{m.behavioural_component_title()} ($r(w_I, w_O)$):</strong> {m.behavioural_component_text()}
   </div>
   <div class="component-item">
     <strong>{m.physiological_component_title()} (Emotion $F$, Arousal &#92;Delta SP):</strong> {m.physiological_component_text()}
+  </div>
+  <div class="component-item">
+    <strong>Tensor contraction ($&#92;mathcal&#123;C&#125;$):</strong> language, body, affect, context, and time are contracted into a conditional response probability.
   </div>
 </div>
 
@@ -160,6 +175,22 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 **{m.methods_integration_title()}:** {m.methods_integration_text()}
 
 **{m.methods_pipeline_title()}:** {m.methods_pipeline_text()}
+
+### Tensor-first computational method
+
+The Web-based Jungian association protocol is used as a scalable proxy for the Rubber Hand Illusion. The Rubber Hand Illusion directly measures self-boundary update through multisensory body ownership; the Web protocol estimates the information/body boundary by detecting where word stimuli produce coordinated changes in reaction time, voice, face, and optional physiological channels.
+
+The pipeline is:
+
+1. Build $X[p,s,w,m,f,t]$ from language, reaction time, voice, face, skin potential, and context.
+2. Estimate $P(w_O | w_I,B,C)$ from tensor contraction.
+3. Compute $E = -&#92;log P$ as response surprisal.
+4. Extract latent Spirit factors using CP, Tucker, or Tensor Train decomposition.
+5. Estimate information geometry with Fisher-style metrics.
+6. Measure topology with persistent homology: components, loops, and voids.
+7. Project the tensor topology into the 3D tensegrity visualization.
+
+The current 3D graph is therefore interpreted as a projection of tensor geometry, not as the complete scientific object.
 
 <h2 id="results">{m.results()}</h2>
 
@@ -292,4 +323,3 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
     <strong>{m.ref_label()}</strong> Jonathan R. I. Coleman et al, Mol Psychiatry 24, 182-197 (2019)
   </p>
 </div>
-
