@@ -10,6 +10,10 @@
     {
       "pattern": "researcher.spirit-in-physics.com",
       "custom_domain": true
+    },
+    {
+      "pattern": "researcher.spirit-in-physics.org",
+      "custom_domain": true
     }
   ],
   "vars": {

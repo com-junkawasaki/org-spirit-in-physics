@@ -36,6 +36,8 @@ export function relyingPartyForOrigin(originHeader: string | null | undefined): 
   let rpID = host;
   if (host === 'spirit-in-physics.com' || host.endsWith('.spirit-in-physics.com')) {
     rpID = 'spirit-in-physics.com';
+  } else if (host === 'spirit-in-physics.org' || host.endsWith('.spirit-in-physics.org')) {
+    rpID = 'spirit-in-physics.org';
   } else if (host === 'localhost' || host === '127.0.0.1') {
     rpID = 'localhost';
   }
