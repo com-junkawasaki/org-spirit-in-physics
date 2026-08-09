@@ -1,0 +1,5 @@
+private-data/
+dist/
+node_modules/
+*.session.json
+*.encrypted.json

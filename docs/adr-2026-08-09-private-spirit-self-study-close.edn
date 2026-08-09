@@ -1,0 +1,48 @@
+{:adr/id :spirit/private-self-study-session-close-2026-08-09
+ :status :accepted
+ :scope :private-researcher-self-study
+ :participant :junkawasaki-self-001
+ :decisions
+ [{:id :operational-spirit-model
+   :decision "Treat spirit as an operational time-dependent information model, not an independently detected entity or diagnosis."}
+  {:id :macbook-first
+   :decision "Run the first implementation on localhost using MacBook camera, microphone, display, and speaker."}
+  {:id :word-association
+   :decision "Use a 12-word Jung-inspired exploratory association task without complex, personality, truth, or unconscious-access claims."}
+  {:id :voice-answer
+   :decision "Store only visibly recorded per-word answer clips, bounded to 30 seconds and 2 MB, in a dedicated IndexedDB store."}
+  {:id :analysis-boundary
+   :decision "Run local descriptive acoustic features; keep transcription and text/speech emotion model inference disabled and audited as not-run."}
+  {:id :intervention-boundary
+   :decision "Use low-intensity audiovisual stimuli, immediate stop, 20-hour washout, and repeated-condition evidence before any transformation-candidate label."}]
+ :verification
+ {:unit-tests {:count 21 :status :passed}
+  :production-build :passed
+  :private-app-third-party-advisories 0
+  :edn-parse :passed
+  :browser-flow [:camera-live :microphone-live :voice-recorded :voice-playable
+                 :indexeddb-persisted :reload-rehydrated :console-errors-none]
+  :external-network :none-observed-in-browser-verification}
+ :privacy
+ {:camera-frames-stored false
+  :continuous-microphone-audio-stored false
+  :answer-audio-stored :local-only
+  :repository-measurement-data false
+  :encrypted-export :aes-256-gcm}
+ :open-items
+ [{:id :speech-model-review
+   :state :not-enabled
+   :requirement "Pinned model revision, held-out Japanese evaluation, uncertainty contract, and renewed disclosure."}
+  {:id :apple-native-runtime
+   :state :design-only
+   :requirement "Implement and separately verify Apple Vision Pro, Apple Watch, and iPhone runtime."}
+  {:id :human-evidence
+   :state :not-established
+   :requirement "Repeat both conditions safely; do not infer structural transformation from a single session."}]
+ :handoff
+ {:entrypoint "apps/private-self-study"
+  :run "pnpm --dir apps/private-self-study dev"
+  :test "pnpm --dir apps/private-self-study test"
+  :protocols ["apps/private-self-study/protocol/protocol.edn"
+              "apps/private-self-study/protocol/word-association-contract.edn"
+              "apps/private-self-study/protocol/macbook-sensor-contract.edn"]}}
