@@ -1,0 +1,38 @@
+{:contract/id :spirit/macbook-sensor-display-speaker-v0.1
+ :contract/status :implemented
+ :runtime {:platform :macbook
+           :delivery :localhost-browser
+           :secure-context-required true
+           :external-network false}
+ :camera {:permission :explicit
+          :preview :calibration-only
+          :working-resolution [64 48]
+          :features [:normalized-luminance-mean :frame-luminance-difference-mean]
+          :sample-period-seconds 1
+          :device-metadata [:width :height :frame-rate]
+          :raw-frames-persisted false
+          :excluded [:face-detection :face-recognition :identity :emotion-inference]}
+ :microphone {:permission :explicit
+              :channel-count 1
+              :features [:rms :peak]
+              :sample-period-seconds 1
+              :device-metadata [:sample-rate :channel-count]
+              :connected-to-output false
+              :continuous-raw-audio-persisted false
+              :answer-recording {:enabled true :maximum-seconds 30 :maximum-bytes 2000000
+                                 :storage :browser-indexeddb-only}
+              :excluded [:automatic-speech-recognition :speaker-identification]}
+ :display {:pulse-hz [0.05 0.15]
+           :strobe false
+           :rapid-peripheral-motion false
+           :subliminal false}
+ :speaker {:generated-hz [110 290]
+           :web-audio-master-gain-max 0.1
+           :microphone-feedback false}
+ :quality {:calibration-seconds 10
+           :sensor-loss-action :stop-session
+           :page-hidden-action :stop-session}
+ :interpretation {:camera-confounded-by-display true
+                  :microphone-confounded-by-speaker true
+                  :direct-spirit-measurement false
+                  :diagnostic false}}

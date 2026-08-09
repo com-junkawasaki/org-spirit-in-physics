@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0">
+  <header>
+    <vendor>com-junkawasaki/org-spirit-in-physics</vendor>
+    <product version="0.1.0">private-self-study</product>
+    <name>Apple device closed-loop Spirit feasibility model</name>
+  </header>
+  <sim_specs method="euler" time_units="second">
+    <start>0</start><stop>180</stop><dt>1</dt>
+  </sim_specs>
+  <model name="apple-closed-loop-spirit">
+    <variables>
+      <stock name="Regulatory_Capacity"><eqn>0.5</eqn><inflow>integration_gain</inflow><outflow>overload_loss</outflow></stock>
+      <stock name="Arousal_Load"><eqn>0.5</eqn><inflow>arousal_gain</inflow><outflow>arousal_recovery</outflow></stock>
+      <stock name="Meaning_Coherence"><eqn>0.5</eqn><inflow>coherence_gain</inflow><outflow>coherence_decay</outflow></stock>
+      <stock name="Perceived_Agency"><eqn>0.5</eqn><inflow>agency_gain</inflow><outflow>agency_loss</outflow></stock>
+      <stock name="Interoceptive_Alignment"><eqn>0.5</eqn><inflow>alignment_gain</inflow><outflow>alignment_loss</outflow></stock>
+
+      <aux name="requested_intensity"><eqn>0.35</eqn></aux>
+      <aux name="participant_tolerance"><eqn>0.65</eqn></aux>
+      <aux name="watch_sensor_quality"><eqn>0.9</eqn></aux>
+      <aux name="vision_sensor_quality"><eqn>0.9</eqn></aux>
+      <aux name="clock_quality"><eqn>0.95</eqn></aux>
+      <aux name="safety_enable"><eqn>1</eqn></aux>
+      <aux name="watch_haptic_active"><eqn>0</eqn></aux>
+      <aux name="haptic_measurement_gap"><eqn>watch_haptic_active</eqn></aux>
+      <aux name="effective_watch_quality"><eqn>watch_sensor_quality * (1 - haptic_measurement_gap)</eqn></aux>
+      <aux name="sensor_quality"><eqn>MIN(effective_watch_quality, vision_sensor_quality) * clock_quality</eqn></aux>
+      <aux name="effective_intensity"><eqn>MIN(requested_intensity, participant_tolerance) * sensor_quality * safety_enable</eqn></aux>
+      <aux name="physiological_match"><eqn>0.65</eqn></aux>
+      <aux name="vision_synchrony"><eqn>0.70</eqn></aux>
+      <aux name="alignment"><eqn>(physiological_match + vision_synchrony + Interoceptive_Alignment) / 3</eqn></aux>
+      <aux name="overload"><eqn>MAX(0, effective_intensity - participant_tolerance)</eqn></aux>
+
+      <flow name="integration_gain"><eqn>alignment * effective_intensity * (1 - Regulatory_Capacity) * 0.08</eqn></flow>
+      <flow name="overload_loss"><eqn>overload * Regulatory_Capacity * 0.12</eqn></flow>
+      <flow name="arousal_gain"><eqn>effective_intensity * (1 - Arousal_Load) * 0.10</eqn></flow>
+      <flow name="arousal_recovery"><eqn>(1 - effective_intensity) * Arousal_Load * 0.08</eqn></flow>
+      <flow name="coherence_gain"><eqn>alignment * Regulatory_Capacity * (1 - Meaning_Coherence) * 0.06</eqn></flow>
+      <flow name="coherence_decay"><eqn>(1 - alignment) * Meaning_Coherence * 0.04</eqn></flow>
+      <flow name="agency_gain"><eqn>alignment * safety_enable * (1 - Perceived_Agency) * 0.04</eqn></flow>
+      <flow name="agency_loss"><eqn>overload * Perceived_Agency * 0.10</eqn></flow>
+      <flow name="alignment_gain"><eqn>physiological_match * sensor_quality * (1 - Interoceptive_Alignment) * 0.05</eqn></flow>
+      <flow name="alignment_loss"><eqn>(1 - sensor_quality) * Interoceptive_Alignment * 0.08</eqn></flow>
+    </variables>
+  </model>
+</xmile>

@@ -1,0 +1,42 @@
+{:contract/id :spirit/apple-device-loop-v0.1
+ :contract/status :design-not-active
+ :roles {:watch {:platform :watchos
+                 :sensors #{:heart-rate :motion :participant-stop}
+                 :interventions #{:predefined-haptic}}
+         :broker {:platform :ios
+                  :responsibilities #{:watch-pairing :clock-alignment :quality-gate
+                                      :safety-supervisor :encrypted-relay :event-ledger}}
+         :vision {:platform :visionos
+                  :sensors #{:device-pose :optional-hand-pose :interaction-events}
+                  :interventions #{:bounded-visual :bounded-spatial-audio}}}
+ :excluded #{:raw-gaze :gaze-reconstruction :emotion-inference :diagnosis :therapy
+             :continuous-hrv-control :ecg-control :spo2-control :cloud-relay
+             :covert-camera :scene-reconstruction}
+ :event {:required [:schema-version :session-id :event-id :device-role :sequence
+                    :monotonic-ns :wall-clock :clock-offset-ms
+                    :clock-uncertainty-ms :quality-flags :payload
+                    :protocol-version :consent-version]
+         :append-only true}
+ :feature-window {:length-seconds 30
+                  :step-seconds 5
+                  :watch [:heart-rate-mean :heart-rate-slope :valid-fraction
+                          :motion-rms :motion-artifact]
+                  :vision [:head-angular-velocity-rms :head-displacement
+                           :hand-motion-rms :response-latency :tracking-quality]
+                  :outputs [:arousal-proxy :movement-settling
+                            :synchrony-confidence :sensor-quality]}
+ :adaptation-disable {:clock-uncertainty-ms-over 250
+                      :heart-rate-age-seconds-over 10
+                      :on #{:sequence-gap :authorization-loss :tracking-loss
+                            :broker-loss :participant-stop :safety-stop}}
+ :watch-haptic {:minimum-gap-seconds 10
+                :predefined-types-only true
+                :heart-rate-exclusion-window true
+                :active-from-stage 3}
+ :stages [{:id 0 :name :simulator :minimum-sessions 3}
+          {:id 1 :name :sensing-only :minimum-sessions 5}
+          {:id 2 :name :randomized-open-loop :sessions 8}
+          {:id 3 :name :isolated-haptic-component :sessions 8}
+          {:id 4 :name :closed-loop-feasibility :sessions 8}]
+ :privacy {:local-first true :cloud false :git-data false
+           :encrypted-ledger true :minimal-permissions true}}

@@ -1,0 +1,62 @@
+{:protocol/id :spirit/private-self-study-v0.3
+ :protocol/status :exploratory
+ :protocol/participant {:id "junkawasaki-self-001"
+                        :role #{:researcher :participant}
+                        :population :n-of-1}
+ :construct {:name :spirit
+             :definition "A constructed, time-dependent information model projected from self-report, behavior, and optional physiology."
+             :not-claimed #{:independent-lifeform :diagnosis :therapy :metaphysical-proof}}
+ :design {:conditions [:adaptive-audiovisual :neutral-audiovisual]
+          :allocation :seeded-balanced-pairs
+          :sessions 8
+          :duration-seconds 180
+          :washout-minimum-hours 20}
+ :measures {:primary [:calm :arousal :valence :coherence :agency :connectedness]
+            :optional [:heart-rate :camera-brightness :camera-frame-change
+                       :microphone-rms :microphone-peak :association-response
+                       :association-latency :association-self-valence
+                       :association-self-arousal]
+            :future-not-active [:hrv :eda :reaction-time :voice-prosody]}
+ :stimulus-envelope {:audio {:master-gain-max 0.1 :base-hz [110 290]}
+                     :visual {:pulse-hz [0.05 0.15] :strobe false :subliminal false}
+                     :network-calls false
+                     :camera {:active true :raw-storage false
+                              :features [:brightness :frame-change]
+                              :excluded [:face-recognition :emotion-inference]}
+                     :microphone {:active true :raw-storage false
+                                  :features [:rms :peak]
+                                  :excluded [:recording :speech-recognition :transcription]}}
+ :stop-rules {:immediate [:headache :palpitation :strong-anxiety :derealization :nausea :hearing-discomfort]
+              :automatic [:page-hidden]
+              :always-visible-control true}
+ :analysis {:session-outcome "mean(post favorable dimensions, inverse arousal) - mean(pre ...)"
+            :contrast "mean(adaptive outcome) - mean(neutral outcome)"
+            :transformation-candidate {:min-completed 6
+                                       :min-per-condition 3
+                                       :contrast-min 0.15
+                                       :safety-events 0}
+            :interpretation :exploratory-not-confirmatory}
+ :privacy {:repository :private
+           :runtime :localhost-only
+           :storage :browser-indexeddb
+           :raw-media :not-collected
+           :export :aes-256-gcm
+           :real-session-files-in-git false}
+ :device-extension {:status :design-not-active
+                    :contract "apple-device-contract.edn"
+                    :topology [:apple-watch :paired-iphone-broker :apple-vision-pro]
+                    :activation-order [:simulator :sensing-only :open-loop
+                                       :isolated-haptic :closed-loop-feasibility]}
+ :macbook-extension {:status :implemented
+                     :sensors [:camera-feature-extractor :microphone-feature-extractor]
+                     :interventions [:display-low-motion :speaker-low-gain]
+                     :sensor-calibration-seconds 10
+                     :sample-period-seconds 1
+                     :raw-media-storage false
+                     :sensor-driven-adaptation false}
+ :association-extension {:status :implemented
+                         :contract "word-association-contract.edn"
+                         :sequence [:pre-self-report :word-association
+                                    :audiovisual-stimulus :post-self-report]
+                         :llm-inference :researched-not-enabled
+                         :self-report-authority :primary}}

@@ -1,0 +1,37 @@
+{:contract/id :spirit/word-association-v0.2-voice
+ :contract/status :implemented
+ :method {:inspiration :jung-word-association
+          :claim :computerized-exploratory-association-task
+          :not-claimed #{:complex-detection :unconscious-access :personality-test
+                         :diagnosis :truth-detection}}
+ :stimuli [{:category :neutral :words ["水" "椅子" "窓" "道"]}
+           {:category :personal :words ["家" "仕事" "お金" "未来" "私"]}
+           {:category :affective :words ["信頼" "孤独" "変化"]}]
+ :trial {:input #{:typed-first-association :spoken-first-association}
+         :measures [:first-input-latency-ms :submit-latency-ms :response-length
+                    :self-valence :self-arousal :camera-features :microphone-features]
+         :omission-allowed true
+         :continuous-sensor-raw-media false
+         :answer-audio {:stored true
+                        :location :browser-indexeddb-only
+                        :maximum-seconds 30
+                        :maximum-bytes 2000000
+                        :playback-before-save true
+                        :encrypted-export true}}
+ :summary {:method :within-session-descriptive
+           :latency-reference :median-plus-robust-deviation
+           :no-population-norms true}
+ :voice-analysis {:local-acoustic {:status :enabled
+                                   :features [:duration-ms :rms-mean :peak-max :voiced-fraction]
+                                   :interpretation :descriptive-not-emotion-inference}
+                  :transcription {:status :not-run :model nil}
+                  :speech-emotion {:status :not-run :model nil}
+                  :speaker-identification :excluded}
+ :emotion-analysis {:self-report-authority :primary
+                    :model-status :researched-not-enabled
+                    :primary-candidate "neuralnaut/deberta-wrime-emotions"
+                    :fine-grained-candidate "tojohere/goemotions-ja-xlm-roberta-base"
+                    :contextual-llm-candidate "Qwen/Qwen3.5-4B"
+                    :required-record [:model-id :model-revision :prompt-version
+                                      :output :uncertainty :inference-status]
+                    :external-api false}}
