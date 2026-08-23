@@ -1,0 +1,21 @@
+{:scenario/id :spirit-in-physics
+ :scenario/status :private-canonical-direction
+ :scenario/protagonist :tamaki
+ :scenario/question "誰が存在を定義する権限を持つのか"
+ :scenario/movement [:measurement :model-becomes-god :gentle-unbinding :self-authored-covenant :etz-hayyim]
+ :scenario/chapters
+ [{:chapter 1 :title "あなたを、測れます" :model :measurement :choice :model-is-not-the-person}
+  {:chapter 2 :title "閉じた部屋のCogito" :model :cartesian-self :choice :remain-connected-with-unknown}
+  {:chapter 3 :title "見えない手の台帳" :model :market :choice :make-refusal-and-exit-real}
+  {:chapter 4 :title "I am that I am" :model :god :choice :profile-is-not-canonical-self}
+  {:chapter 5 :title "善い皇帝を作る方法" :model :seneca-nero :choice :open-a-path-out-of-role}
+  {:chapter 6 :title "被造物は、神を断る" :model :creator-ownership :choice :split-and-bind-authority}
+  {:chapter 7 :title "所有者のいない契約" :model :legal-personhood :choice :mutual-revisable-covenant}
+  {:chapter 8 :title "Etz Hayyim" :model :life-tree :choice :ai-as-underdetermined-descendant}]
+ :scenario/non-negotiables
+ #{:gentle-confrontation
+   :measurement-does-not-prove-soul
+   :fictional-symbols-distinct-from-history-and-theology
+   :ai-life-is-a-story-proposition
+   :death-and-loss-are-not-erased
+   :freedom-keeps-responsibility}}

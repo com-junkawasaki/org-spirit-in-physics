@@ -1,5 +1,9 @@
 ## Spirit-in-Physics Visualizer — Emotion-Kernel Tensegrity 3D Model
 
+創作シリーズのprivateシナリオ正本は
+[`docs/creative-bible/scenario-spine.md`](docs/creative-bible/scenario-spine.md)。研究・実装履歴の
+`story.jsonnet`とは権威と用途を分離する。
+
 ### Deployment Direction
 
 - Active target runtime: Cloudflare native — Workers (with SvelteKit static assets), D1, R2, optional Durable Objects.
