@@ -1,52 +1,68 @@
-# arXiv submission package — Spirit in Physics (first installment)
+# arXiv submission package — Spirit in Physics
 
-## Files in the tarball (`arxiv-spirit-in-physics.tar.gz`)
+## Scientific scope
+
+This revision combines a Stage 1 pilot feasibility result with a prospective
+Stage 2 validation framework. Spirit is hypothesized to be a physically
+realized information-bearing organization; response energy, Jungian complexes,
+and a collective-unconscious component are testable targets. The framework
+defines hierarchy, comparators, validation endpoints, falsifiers, evidence
+levels, leakage control, simulation-based sample sizing, independent
+replication, and preregistration requirements. It is not itself a completed
+registration and does **not yet** claim that the four hypotheses are proven.
+
+## Source package
 
 | File | Role |
 | --- | --- |
-| `main.tex` | top-level source (compile with **XeLaTeX**) |
-| `main.bbl` | pre-compiled bibliography — arXiv uses it and does **not** run BibTeX |
-| `references.bib` | bibliography source (archival; not required since `.bbl` is present) |
-| `fig_landscape.pdf` | Figure 1 (3 panels), generated from real pilot data |
-| `00README.json` | tells arXiv to use the `xelatex` compiler |
+| `main.tex` | English manuscript; arXiv top-level source |
+| `main.bbl` | precompiled bibliography |
+| `references.bib` | bibliography source |
+| `fig_landscape.pdf` | 970-trial response landscape and test–retest panel |
+| `fig_individual_spirit.pdf` | participant-specific response embeddings |
+| `fig_collective.pdf` | exploratory cross-participant latency statistics |
+| `fig_spirit_manifold.pdf` | descriptive graph/tensor summaries |
+| `00README.json` | requests XeLaTeX |
 
-The Japanese glyphs (情緒) use **Harano Aji**, which ships with arXiv's TeX Live,
-so no font upload is needed. The preamble is engine-guarded (`iftex`): under
-pdfLaTeX it still compiles (romanised "Jōcho"), under XeLaTeX it renders kanji.
+`main_ja.tex` and `main_ja.pdf` are a Japanese companion and are not required
+in the English arXiv source archive.
 
-## Recommended arXiv metadata
+## Recommended metadata
 
-- **Primary category:** `q-bio.NC` (Neurons and Cognition)
-- **Cross-list:** `physics.bio-ph` (drop `cond-mat.stat-mech`: no k_BT /
-  entropy-production quantity is measured, so a stat-mech cross-list invites
-  moderator reclassification)
-- **Title:** Spirit in Physics: constructing the self as an information-geometric
-  (tensor) space from word association and physiology
-- **Authors:** Jun Kawasaki, Kazuki Tainaka, Tomonori Takeuchi
-- **License:** choose at submission (recommended: CC BY 4.0). arXiv requires a
-  license selection; this package does not embed one.
-- **Endorsement:** `q-bio.NC` may require endorsement for a first-time
-  submitter — use a co-author with submission history in the category.
+- Primary category: `q-bio.NC`
+- Cross-list: `physics.bio-ph`
+- Title: *Spirit in Physics: A falsifiable physical hypothesis of spirit, pilot
+  feasibility study, and prospective validation framework*
+- Authors: Jun Kawasaki, Kazuki Tainaka, Tomonori Takeuchi
+- License: confirm with all authors at submission.
 
-## Local build (reproduce the PDF)
+## Reproduce locally
 
 ```bash
-# figure (Python venv with matplotlib/numpy)
-python scripts/make_landscape_figure.py        # writes fig_landscape.pdf/.png
-# document
-tectonic arxiv_submission/main.tex             # or: xelatex + bibtex + xelatex x2
+python scripts/make_landscape_figure.py
+python scripts/plot_individual_spirit.py
+python scripts/spirit_tensor.py
+cd arxiv_submission
+xelatex main.tex
+bibtex main
+xelatex main.tex
+xelatex main.tex
 ```
 
-## Honest-scope notes (kept in sync with the manuscript)
+## Verified accounting and unresolved release items
 
-- Cohort measured: N≈10. Figure uses the **N=5** subset with retrievable,
-  task-overlapping continuous skin-potential records (945 trials). 3 skin-
-  potential CSVs are git-annex pointers (0 known copies here); 1 participant's
-  recording does not overlap the task window; 1 has no CSV.
-- The energy proxy `E = z(latency) + z(ΔSP)` makes the low/high-E split
-  **definitional** — Fig.1a demonstrates *measurability*, not a confirmed
-  prediction. Pilot test–retest is weak (r=0.24).
-- **No rubber-hand-illusion data** is present in these event logs (two
-  word-association sessions only). RHI appears in the manuscript solely as the
-  *conceptual grounding* (Botvinick 1998) for bodily-self malleability and as a
-  protocol component "reported separately" — not as analyzed pilot data.
+- Eleven participant directories were present. Five yielded clock-aligned
+  records and 970 valid trials (198, 181, 195, 199, 197).
+- Exclusions: three unavailable git-annex CSV objects, two directories without
+  physiological CSV, and one recording with no task-window overlap.
+- The revised landscape shows all 970 trials. The old count of 945 was created
+  by a display-only upper-2.5% trim and was not a valid-window count.
+- Semantic response transcripts and rubber-hand-illusion data are not used.
+- Channel 2 is primary in the current code but was not preregistered; sensor
+  placement and calibration metadata remain incomplete.
+- Before public submission, archive a versioned code snapshot, environment,
+  checksums, and an ethics-compatible deidentified derived dataset. The current
+  GitHub repository returns 404 to unauthenticated users and must not be cited
+  as a public reproducibility resource.
+- Confirm funding, competing interests, author contributions, and final approval
+  with every author before submission.

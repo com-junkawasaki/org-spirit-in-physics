@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""plot_individual_spirit.py — visualize each individual's constructed spirit
-space, and the shared (collective) component across individuals.
+"""Visualize participant-specific response spaces and cross-participant latency.
 
 Outputs:
   fig_individual_spirit.pdf  -- one panel per participant: their own spectral
-                                spirit space, nodes coloured by energy (charge);
-                                high-energy nodes = candidate complexes.
-  fig_collective.pdf         -- (a) inter-subject correlation of per-word charge,
-                                (b) individual vs collective variance split,
-                                (c) collective-component (shared) energy spectrum.
+                                response space, nodes coloured by response cost.
+  fig_collective.pdf         -- cross-participant latency summaries and nulls.
 
 Pure numpy + matplotlib. No Japanese text in the figures (energy colour carries
 the structure); complex word lists are reported in the paper text.
@@ -37,17 +33,18 @@ def per_word(trials, feats=("rt", "dsp_Ch1", "dsp_Ch2")):
 
 def spectral(X, k=2):
     Xz = (X - X.mean(0)) / (X.std(0) + 1e-9)
-    sq = (Xz ** 2).sum(1)
-    D2 = np.maximum(sq[:, None] + sq[None, :] - 2 * Xz @ Xz.T, 0)
+    # Direct differences avoid numerical cancellation in the Gram-matrix form.
+    diff = Xz[:, None, :] - Xz[None, :, :]
+    D2 = np.sum(diff * diff, axis=2)
     med = np.median(np.sqrt(D2[D2 > 0])) if np.any(D2 > 0) else 1.0
     Wk = np.exp(-D2 / (med ** 2 + 1e-12)); np.fill_diagonal(Wk, 0)
     d = Wk.sum(1); dinv = 1 / np.sqrt(d + 1e-12)
     L = np.eye(len(Xz)) - dinv[:, None] * Wk * dinv[None, :]
     ev, V = np.linalg.eigh(L)
     emb = V[:, 1:1 + k]
-    energy = (Xz[:, 0] + Xz[:, 1])  # z(latency)+z(dSP_Ch1) proxy of node charge
-    energy = (energy - energy.mean()) / (energy.std() + 1e-9)
-    return emb, energy
+    cost = Xz[:, 0] + Xz[:, 2]  # z(latency)+z(dSP_Ch2)
+    cost = (cost - cost.mean()) / (cost.std() + 1e-9)
+    return emb, cost
 
 
 def main():
@@ -60,27 +57,26 @@ def main():
     pids = sorted(parts)
     anon = {p: f"P{i+1}" for i, p in enumerate(pids)}
 
-    # ---- Figure 1: per-individual spirit spaces ----
+    # ---- Figure 1: per-participant response spaces ----
     n = len(pids)
     fig, axes = plt.subplots(1, n, figsize=(3.0 * n, 3.2))
     if n == 1:
         axes = [axes]
     for ax, p in zip(axes, pids):
         words, X = per_word(parts[p])
-        emb, energy = spectral(X)
-        sc = ax.scatter(emb[:, 0], emb[:, 1], c=energy, cmap="viridis", s=22, alpha=0.85, edgecolors="none")
+        emb, cost = spectral(X)
+        sc = ax.scatter(emb[:, 0], emb[:, 1], c=cost, cmap="viridis", s=22, alpha=0.85, edgecolors="none")
         ax.set_title(f"{anon[p]}  ({len(words)} nodes)", fontsize=10)
         ax.set_xticks([]); ax.set_yticks([])
         ax.set_xlabel("spectral 1", fontsize=8)
-    fig.suptitle("Individual spirit spaces (spectral embedding; colour = node energy / charge). "
-                 "High-energy nodes = candidate complexes.", fontsize=10)
+    fig.suptitle("Participant-specific response spaces (spectral embedding; colour = response-cost score)", fontsize=10)
     cb = fig.colorbar(sc, ax=axes, fraction=0.012, pad=0.01)
-    cb.set_label("node energy E", fontsize=8)
+    cb.set_label("response-cost score C", fontsize=8)
     fig.savefig(os.path.join(ROOT, "arxiv_submission", "fig_individual_spirit.pdf"))
     fig.savefig(os.path.join(ROOT, "arxiv_submission", "fig_individual_spirit.png"), dpi=150)
     print("wrote fig_individual_spirit.pdf")
 
-    # ---- Figure 2: collective component ----
+    # ---- Figure 2: cross-participant latency structure ----
     words = sorted(set(t["word"] for g in parts.values() for t in g))
     widx = {w: i for i, w in enumerate(words)}
 
@@ -134,17 +130,17 @@ def main():
     im = ax[0].imshow(C, cmap="RdBu_r", vmin=-0.4, vmax=0.4)
     ax[0].set_xticks(range(len(pids))); ax[0].set_yticks(range(len(pids)))
     ax[0].set_xticklabels([anon[p] for p in pids]); ax[0].set_yticklabels([anon[p] for p in pids])
-    ax[0].set_title(f"(a) Inter-subject charge correlation\n(mean off-diag r={obs_r:+.2f}, perm p={p_r:.3f})", fontsize=9)
+    ax[0].set_title(f"(a) Cross-participant latency correlation\n(mean off-diag r={obs_r:+.2f}, perm p={p_r:.3f})", fontsize=9)
     fig2.colorbar(im, ax=ax[0], fraction=0.046)
 
     ax[1].bar(["observed\n1st PC", "shuffled\nnull"], [obs_pc, npc.mean()],
               yerr=[0, npc.std()], color=["#7f1d1d", "#999999"])
     ax[1].set_ylim(0, 0.5); ax[1].set_ylabel("1st-PC variance share")
-    ax[1].set_title(f"(b) Shared component vs null\n(obs {obs_pc*100:.0f}% ~ null {npc.mean()*100:.0f}%, p={p_pc:.2f})", fontsize=9)
+    ax[1].set_title(f"(b) First PC vs shuffle null\n(obs {obs_pc*100:.0f}% ~ null {npc.mean()*100:.0f}%, p={p_pc:.2f})", fontsize=9)
 
     ax[2].plot(range(1, len(share) + 1), share, "o-", color="#1f3b73")
     ax[2].set_xlabel("component"); ax[2].set_ylabel("variance share")
-    ax[2].set_title("(c) Shared-structure spectrum", fontsize=9)
+    ax[2].set_title("(c) Latency variance spectrum", fontsize=9)
     fig2.tight_layout()
     fig2.savefig(os.path.join(ROOT, "arxiv_submission", "fig_collective.pdf"))
     fig2.savefig(os.path.join(ROOT, "arxiv_submission", "fig_collective.png"), dpi=150)
