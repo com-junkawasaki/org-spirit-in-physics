@@ -150,25 +150,21 @@ def main():
     for pid, tr in per_part.items():
         print(f"  {pid}: {len(tr)} trials")
 
-    # choose skin-potential channel = most response-locked (largest median Delta SP)
+    # Ch2 is the primary skin-potential channel used by the analysis pipeline.
+    # Channel selection was not preregistered; this is reported as a limitation.
     chan_score = {}
     for ch in ["Ch1", "Ch2", "Ch3", "Ch4"]:
         vals = np.array([tr[f"dsp_{ch}"] for tr in all_trials])
         chan_score[ch] = np.median(vals)
-    sp_ch = max(chan_score, key=chan_score.get)
+    sp_ch = "Ch2"
     print("channel median |Delta SP|:", {k: round(v, 4) for k, v in chan_score.items()},
-          "-> skin-potential channel:", sp_ch)
+          "-> analysis channel:", sp_ch)
 
     rt = np.array([tr["rt"] for tr in all_trials])
     dsp = np.array([tr[f"dsp_{sp_ch}"] for tr in all_trials])
-    # robust clip of skin-potential outliers for display
-    hi = np.percentile(dsp, 97.5)
-    keep = dsp <= hi
-    rt, dsp = rt[keep], dsp[keep]
-
     zr = (rt - rt.mean()) / rt.std()
     zs = (dsp - dsp.mean()) / dsp.std()
-    energy = zr + zs  # E = z(latency) + z(Delta SP)
+    energy = zr + zs  # descriptive response-cost score
 
     # P1 diagnostic: latency vs arousal correlation (predicted positive)
     r_p1 = np.corrcoef(rt, dsp)[0, 1]
@@ -200,17 +196,17 @@ def main():
     sc = ax.scatter(rt, dsp, c=energy, cmap="viridis", s=26, alpha=0.85,
                     edgecolors="none")
     cb = fig.colorbar(sc, ax=ax)
-    cb.set_label(r"Energy  $E=z(\mathrm{latency})+z(\Delta SP)$")
+    cb.set_label(r"Response-cost score  $C=z(\mathrm{latency})+z(\Delta SP)$")
     ax.set_xlabel("Response latency (s)")
     ax.set_ylabel(r"Skin-potential arousal $\Delta SP$ (mV)")
-    ax.set_title(f"(a) Pilot energy landscape  (N={len(per_part)}, {len(rt)} trials)")
+    ax.set_title(f"(a) Pilot response landscape  (N={len(per_part)}, {len(rt)} trials)")
     # annotate regimes
     ar = dict(arrowstyle="->", lw=1.2)
-    ax.annotate("stable\nattractor\n(low E)", xy=(rt.min() + 0.15, dsp.min() + 0.004),
+    ax.annotate("lower response\ncost", xy=(rt.min() + 0.15, dsp.min() + 0.004),
                 xytext=(np.percentile(rt, 33), np.percentile(dsp, 80)),
                 fontsize=9, ha="center", color="#1b5e20", fontweight="bold",
                 arrowprops=dict(color="#1b5e20", **ar))
-    ax.annotate("interference\n(high E)", xy=(np.percentile(rt, 99), np.percentile(dsp, 88)),
+    ax.annotate("higher response\ncost", xy=(np.percentile(rt, 99), np.percentile(dsp, 88)),
                 xytext=(np.percentile(rt, 72), np.percentile(dsp, 96)),
                 fontsize=9, ha="center", color="#7f1d1d", fontweight="bold",
                 arrowprops=dict(color="#7f1d1d", **ar))

@@ -1,177 +1,167 @@
 \documentclass[a4paper,11pt]{article}
-% Compile with XeLaTeX or LuaLaTeX (arXiv auto-detects via fontspec).
-% Japanese glyphs use Harano Aji, which ships with TeX Live (and arXiv).
 \usepackage{iftex}
-\ifPDFTeX
-  \usepackage[utf8]{inputenc}
-  \usepackage[T1]{fontenc}
-\else
-  \usepackage{fontspec}
-  \usepackage{xeCJK}
-  \setCJKmainfont{HaranoAjiMincho-Regular.otf}
-\fi
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{geometry}
+\ifPDFTeX\usepackage[utf8]{inputenc}\usepackage[T1]{fontenc}\else\usepackage{fontspec}\fi
+\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,float,hyperref,geometry,cite}
 \geometry{margin=1in}
-\usepackage{cite}
-
-% Untranslated concept term (Japanese): Jōcho (情緒)
-\newcommand{\jocho}{\emph{J\={o}cho}}
-
-\title{\textbf{Spirit in Physics:}\\
-\large constructing the self as an information-geometric (tensor) space\\
-from word association and physiology}
-\author{
-    Jun Kawasaki$^{1}$, Kazuki Tainaka$^{2}$, Tomonori Takeuchi$^{3}$ \\
-    \small $^{1}$Graduate School of Medical and Dental Sciences, Niigata University \\
-    \small $^{2}$Brain Research Institute, Niigata University, Japan \\
-    \small $^{3}$Department of Biomedicine, Aarhus University, Denmark \\
-    \small \texttt{root@junkawasaki.com}
-}
-\date{June 28, 2026}
+\hypersetup{hidelinks}
+\emergencystretch=2em
+\title{\textbf{Spirit in Physics:}\\\large A falsifiable physical hypothesis of spirit, pilot feasibility study, and prospective validation framework}
+\author{Jun Kawasaki$^{1}$, Kazuki Tainaka$^{2}$, Tomonori Takeuchi$^{3}$\\
+\small $^{1}$Graduate School of Medical and Dental Sciences, Niigata University\\
+\small $^{2}$Brain Research Institute, Niigata University, Japan\\
+\small $^{3}$Department of Biomedicine, Aarhus University, Denmark\\
+\small \texttt{root@junkawasaki.com}}
+\date{August 23, 2026}
 
 \begin{document}
 \maketitle
-
 \begin{abstract}
-We take one assumption seriously and build on it: the conscious self---``spirit''---\emph{is} information. If information is physical (Shannon--Jaynes--Landauer), then a self made of information is a physical object, and the right way to study it is not to test a correlation but to \textbf{construct} it. We therefore give a \textbf{constructive} operational definition: the spirit of an individual \emph{is} the information-geometric space we build from that person's own signals---word associations (Jung), reaction times, and physiological response---in which charged clusters (Jungian \emph{complexes}) and their boundaries with concepts become geometric structure. The boundary of the self is, in principle, fixed physiologically by a rubber-hand-illusion paradigm; the conceptual structure is laid down by the word-association method. We render each individual as a third-order tensor (word $\times$ session $\times$ bodily-feature), embed it spectrally into a per-person ``spirit space,'' and read complexes off as high-energy regions. \textbf{Information $=$ physics $=$ this mathematical space}: the model is not a description of the spirit, it is taken to be the spirit. In a pilot ($N=5$ analyzed of 11; responses transcribed automatically) we build individual spirit spaces, locate their complexes, and use a tensor decomposition to look for a shared component---a candidate \emph{collective unconscious}. It is faint but above chance (inter-subject $r=+0.07$, $p=0.04$); its variance share is not estimable at $N=5$ (the apparent $\sim$25\% sits at the mechanical null). The spirit space is, at this scale, overwhelmingly individual. We present this as a reproducible construction and visualization (the full pipeline runs as a checkpointed StateGraph), not as a confirmatory study; the physiological boundary (RHI) data are the next installment.
+\emph{Spirit in Physics} advances the working hypothesis that spirit is a physically realized, information-bearing organization whose structure can be measured. Participant-specific response manifolds are proposed as an operational approximation; response energy, Jungian complexes, and a component corresponding to the collective unconscious are explicit test targets. Stage 1 asks whether repeated word-association measurements can be converted into auditable geometries. Eleven participant directories were present; five contributed 970 valid clock-aligned trials over two sessions and 99 shared stimulus words. Test--retest latency correlation was weak ($r=0.24$ across 471 matched participant--word pairs). Mean cross-participant latency correlation was small ($\bar r=0.065$; two-sided permutation $p=0.038$), whereas the first-PC share (27\%) did not exceed its shuffle null (approximately 26\%, $p=0.21$). A rank-$[3,6,3]$ tensor approximation described 75.9\% of variance. We therefore pair the feasibility result with a prospective Stage 2 framework: $H_{\mathrm{phys}}$ is primary; $H_{\mathrm{complex}}$ and $H_{\mathrm{collective}}$ are key secondary hypotheses; and $H_{\mathrm{energy}}$ is a mechanistic long-term hypothesis requiring calibrated physical quantities. The framework prespecifies independent replication, held-out prediction, controlled perturbation, external construct validation, negative controls, and falsification conditions. Stage 1 supports construction feasibility, not proof of the four hypotheses.
 \end{abstract}
 
 \section{Introduction}
-The concept of ``spirit'' has stayed outside empirical science for want of a physically grounded, measurable definition. Rather than ask whether spirit \emph{can} be reduced to physics, we adopt a constructive stance: \textbf{assume} the self is information, build the object that assumption implies, and see what it looks like. If the assumption is wrong the construction will be empty or structureless; if it is right, an individual's spirit should appear as concrete geometry recoverable from that individual's own signals.
+Reaction time and autonomic activity during word association have long been used to study stimulus-linked variation in human responses \cite{Jung1910}. Modern graph and tensor methods provide compact ways to summarize such multivariate observations \cite{KoldaBader2009}. They do not, by themselves, establish a psychological construct or causal mechanism.
 
-We keep the Japanese term \jocho{} (情緒) untranslated for the layer of lived, meaning-laden experience not captured by ``emotion'' or ``affect,'' following Kiyoshi Oka \cite{Oka1963,Oka2008}. Our contribution is constructive and infrastructural, not a hypothesis test: (i) an operational identity---\emph{the spirit of a person is the information-geometric space built from their associations and physiology}; (ii) a concrete construction of that space (tensor $\to$ spectral embedding) in which Jungian complexes are high-energy regions; and (iii) a decomposition that separates the individual space from a shared, collective component. The analytical-psychology vocabulary (Section~\ref{sec:interp}) is an interpretive layer over the constructed geometry.
+Information theory and the physical cost of information processing motivate the project's physical premise \cite{Shannon1948,Landauer1961,Berut2012}. The long-term program asks whether the informational organization called spirit has a measurable physical realization. Analytical psychology and the rubber-hand illusion \cite{Botvinick1998} provide candidate structures and bodily-boundary perturbations through which that premise can be tested.
 
-\section{Theoretical Framework}
-We make three assumptions that turn ``spirit'' into a constructible physical object.
+The objective of the program is therefore stronger than visualization: to accumulate reproducible, intervention-sensitive evidence capable of supporting or falsifying a physical model of spirit. The objective of this first installment is narrower: to determine whether latency and skin-potential recordings can be transformed into an auditable candidate representation and to identify which parts of the hypothesis remain untested.
 
-\subsection{Assumption 1: Information is physical}
-\textbf{Shannon (1948)} defined information entropy $H$ \cite{Shannon1948}; \textbf{Jaynes (1957)} showed it is formally the thermodynamic entropy $S$ \cite{Jaynes1957}; \textbf{Landauer (1961)} showed information processing has an energetic cost $k_B T\ln 2$ \cite{Landauer1961}, experimentally verified \cite{Berut2012}. We use this chain as the \emph{motivating} grounding for treating an informational self as physical; we do not measure $k_BT$ or entropy production here.
+\section{Working premise and testable hypotheses}
+We adopt the following premise: a person's spirit is physically realized as an information-bearing organization of bodily and cognitive states. The measured manifold is not declared identical to that organization; it is a candidate model whose adequacy must be tested by prediction, perturbation, and replication. For Stage 2, $H_{\mathrm{phys}}$ is the primary hypothesis, $H_{\mathrm{complex}}$ and $H_{\mathrm{collective}}$ are key secondary hypotheses, and $H_{\mathrm{energy}}$ is mechanistic and long-term until a calibrated physical quantity is available.
 
-\subsection{Assumption 2: The self (spirit) is information}
-The \textbf{rubber-hand illusion} \cite{Botvinick1998} shows the self-boundary is a malleable informational construct with a physiological signature---so the boundary of the self can, in principle, be \emph{measured} (as a bodily response) rather than assumed. \textbf{Jung's word association} \cite{Jung1910} shows the psyche is organized into \emph{complexes}: clusters of charged concepts with measurable reaction times and autonomic responses. Together they license representing a self as charged structure in an informational space.
+\begin{description}\small\setlength{\itemsep}{1pt}\setlength{\parsep}{0pt}
+\item[$H_{\mathrm{phys}}$:] If spirit has a physical realization, its estimated state should reproducibly predict held-out behavioral and physiological responses and should change systematically under controlled perturbations of bodily self and information processing.
+\item[$H_{\mathrm{energy}}$:] Regions requiring greater response latency and autonomic change are observable proxies for higher response cost. A physical-energy interpretation additionally requires calibrated measurements linking the proxy to energetic or information-thermodynamic quantities; the present score alone is insufficient.
+\item[$H_{\mathrm{complex}}$:] Stable high-cost regions should correspond to independently assessed, personally salient Jungian complexes and predict response content or physiology beyond the variables used to construct the regions.
+\item[$H_{\mathrm{collective}}$:] After individual and technical effects are controlled, a replicable cross-participant component should remain and should generalize across samples. Its relation to Jung's collective unconscious is supported only if it also shows theoretically predicted semantic or cultural structure.
+\end{description}
 
-\subsection{Assumption 3: Spirit as an open informational system}
-A self persists by exchanging information and entropy with its environment \cite{Schrodinger1944}; the \textbf{free-energy principle} \cite{Friston2010} casts this as surprisal minimization. We adopt the resulting picture---a self is a structured region of an informational state space---and take the constructive step the principle invites: \emph{build} that state space from data. Non-equilibrium thermodynamics \cite{Seifert2012,Parrondo2015} and feedback control \cite{SagawaUeda2010} motivate, but are not invoked quantitatively in, the present pilot.
+Failure of out-of-sample prediction, perturbation sensitivity, reliability, or independent construct validation would count against the corresponding hypothesis. The current pilot principally addresses whether the candidate representation can be constructed; it provides only exploratory evidence relevant to the remaining hypotheses.
 
-\section{Structural Interpretation}\label{sec:interp}
-We interpret the constructed geometry with analytical psychology:
-\begin{itemize}
-    \item \textbf{Complex:} an energy-charged region of the individual's space (short or labile reaction time, elevated autonomic response).
-    \item \textbf{Archetype:} a structural template recurring \emph{across} individuals---hence a property of the shared component (Section~\ref{sec:tensor}).
-    \item \textbf{Shadow:} suppressed, less reproducible parts of a complex.
-\end{itemize}
+\section{Stage 1 pilot methods}
+\subsection{Ethics and consent}
+Project materials report approval by Niigata University (approval 2024-0269; March 1, 2025). The study interface required acknowledgment of the research purpose, voluntary participation, the right to withdraw without disadvantage, and audio/video recording before registration. The approval letter and retained participant-level consent records were not part of the reviewed analysis package; their completeness must be confirmed before submission.
 
-\section{Constructing the individual spirit space}\label{sec:method}
-We instantiate the spirit of a person as follows. Each stimulus word is presented (Jung's method); the spoken association is transcribed automatically (we reconstruct $851$ stimulus$\to$response pairs across the pilot from the recordings), and two bodily readouts are taken per trial: \textbf{response latency} (a temporal index of processing) and \textbf{skin potential} $\Delta SP$ (electrodermal response). The rubber-hand-illusion paradigm provides the bodily \emph{boundary} of the self under congruent versus incongruent stimulation; those data are pending and the present construction uses the word-association and physiological channels.
+\subsection{Participants and analytic set}
+Eleven participant directories were present. Six could not enter the complete-record analysis: three continuous-recording files were unavailable git-annex pointers, two directories contained no physiological CSV, and one recording did not overlap the task-event clock. Five participants contributed analyzable synchronized records. This was an availability-based analytic subset, not a random or prospectively selected sample. No demographic or clinical inference is attempted.
 
-For one individual, let each node $w$ (a stimulus and/or its response concept) carry a bodily feature vector $x_w$ (standardized latency and skin potential, per session). We define the \textbf{charge / energy} of a node intrinsically,
+\subsection{Task and signal extraction}
+Participants completed two presentations of an approximately 100-word stimulus list. The present analysis uses stimulus identity, event timing, and continuous skin-potential signals; semantic content of spoken association responses is not used in the manifold.
+
+Continuous Mod-002 CSV recordings were sampled at 1 Hz. Response latency was the interval from \texttt{response\_window\_opened} to the first \texttt{speech\_detected} event; values had to satisfy $0<\mathrm{latency}<12$ s. For each channel, skin-potential change $\Delta SP$ was the maximum absolute deviation during the response window from the mean of the 3 s preceding stimulus display. A trial was retained only when event times fell inside the recording and all four channel windows were available. This yielded 970 valid trials (198, 181, 195, 199, and 197 by participant).
+
+Channel 2 is the primary skin-potential channel in the current analysis code; Channel 1 is retained as an additional tensor feature. This choice was not preregistered, and electrode-placement metadata sufficient to give the channels a stable physiological interpretation were unavailable.
+
+\subsection{Participant-specific response spaces}
+Within each participant, trials were averaged by stimulus word. The three features were latency, $\Delta SP_{Ch1}$, and $\Delta SP_{Ch2}$. For visualization we define a descriptive response-cost score
 \begin{equation}
-    E(w) \;=\; z\big(\text{latency}(w)\big) + z\big(\Delta SP(w)\big),
-    \label{eq:energy}
+C(w)=z\{\mathrm{latency}(w)\}+z\{\Delta SP_{Ch2}(w)\}.
 \end{equation}
-build a similarity kernel between nodes, $W_{ij}=\exp(-\lVert x_i-x_j\rVert^2/\sigma^2)$ with $\sigma$ the median pairwise distance, and embed the nodes by the low-lying eigenvectors of the symmetric normalized graph Laplacian $L_{\mathrm{sym}}=I-D^{-1/2}WD^{-1/2}$. \textbf{This embedded, energy-weighted geometry is the spirit space of the individual.} We use two related notions of energy, and keep them distinct: the intrinsic \emph{node charge} $E(w)$ of Eq.~\eqref{eq:energy} (latency$+$arousal; this colours the charge geometry of Figs.~\ref{fig:landscape}--\ref{fig:individual}), and the \emph{manifold energy} of a node---its radius from the centroid of the spectral embedding---which is what ranks nodes into complexes; the two covary (within-individual $r\approx0.52$ between node charge and manifold energy; both rise with latency and arousal). A \emph{complex} is a high-energy region, and its boundary with neutral concepts is where the energy falls off. The construction is intrinsic---no cross-person normalization, no notion of how ``common'' a response is, enters it. We take this constructed object to be the spirit: information $=$ physics $=$ this space.
+This dimensionless score is a candidate proxy under $H_{\mathrm{energy}}$, not a direct measurement of physical energy. Its validation requires independent energetic or information-thermodynamic measurements.
 
-\paragraph{Well-posedness (a stipulative identity, not a tested hypothesis).} To forestall a category error we state the logic explicitly. (i) ``The spirit of a person \emph{is} this space'' is a \textbf{stipulative operational definition}, not an empirical claim to be confirmed by a $p$-value. (ii) What is empirically at stake is whether the construction is \emph{non-empty}: a structureless result would show a flat Laplacian spectrum (no spectral gap), node energy uncorrelated with node identity, and no reproducible high-energy regions. (iii) We instead find structure on all three counts (Sections~\ref{sec:pilot}--\ref{sec:tensor}: spectral gap $\approx0.19$, participation ratio $\approx10.9$, low-rank Tucker geometry, reproducible complexes), so the construction is non-empty---the definition picks out something real, whose \emph{scientific} content (individual structure, shared component) is then measured with appropriate restraint.
+After feature standardization, squared Euclidean distances generated the radial-basis affinity
+\begin{equation}
+W_{ij}=\exp\{-\lVert x_i-x_j\rVert^2/\sigma^2\},
+\end{equation}
+where $\sigma$ was the median nonzero pairwise distance. Coordinates were the nontrivial low-order eigenvectors of the symmetric normalized graph Laplacian $L_{sym}=I-D^{-1/2}WD^{-1/2}$. This is a graph-spectral response embedding, not Fisher information geometry.
 
-\section{Pilot: individual spirit spaces and their complexes}\label{sec:pilot}
-We recruited 11 participants and analyze the $N=5$ with synchronized, clock-aligned continuous skin potential. Across these, $970$ trials were recorded; $945$ have a valid skin-potential response window (used for the charge geometry) and $851$ also carry a transcribed verbal response (used to label nodes). Each individual completed two test--retest sessions of an identical $\sim$100-word list. For each we build the spirit space of Section~\ref{sec:method} and read off its energy geometry.
+\subsection{Cohort tensor and exploratory statistics}
+Participant-by-word means were assembled as $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$ with $P=5$, $W=99$, and $F=3$. Missing cells were imputed first by the word--feature mean and then by the feature mean. Each feature was standardized across the participant--word plane. A truncated HOSVD/Tucker approximation \cite{KoldaBader2009} used ranks $[3,6,3]$. The graph spectrum, participation ratio, and reconstructed variance are descriptive summaries whose ranks were not selected on an independent sample.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\textwidth]{fig_landscape.pdf}
-    \caption{\textbf{The constructed spirit space (energy geometry).}
-    (a) Every node is a word-association trial placed by response latency and
-    skin-potential charge $\Delta SP$ and coloured by node energy $E$
-    (Eq.~\eqref{eq:energy}); low-$E$ \emph{attractor} regions (neutral concepts)
-    and high-$E$ \emph{complex/interference} regions emerge intrinsically, with
-    no popularity or frequency normalization. (b) Skin potential for one
-    individual; vertical lines mark word onsets---the physiological signal from
-    which the boundary is read. (c) Stability of the space across the two
-    sessions (per-word latency, identical list; $r=0.24$). Generated by
-    \texttt{scripts/make\_landscape\_figure.py}.}
-    \label{fig:landscape}
-\end{figure}
+Test--retest stability was Pearson correlation of session-1 and session-2 latency over available matched participant--word pairs. Cross-participant structure was evaluated from the participant-by-word latency matrix. The mean off-diagonal Pearson correlation and first-principal-component variance share were compared with null distributions from 2,000 within-participant word permutations using seed 7. The correlation test was two-sided. These analyses were exploratory, were not preregistered, and no multiplicity-adjusted confirmatory claim is made.
 
-\paragraph{Complexes as high-energy regions.} The energy geometry separates two intrinsic regimes (Fig.~\ref{fig:landscape}a): low-$E$ attractor regions (fast, low-arousal, reproducible nodes---neutral concepts) and high-$E$ regions (slow and/or high-arousal, less reproducible nodes), which are the candidate \emph{complexes}. For the pilot cohort the high-energy region is populated by items such as \textit{door}~(ドア), \textit{big}~(大きい), \textit{wash}~(洗う), \textit{habit}~(癖), \textit{expensive}~(高価な), and the low-energy attractor by concrete neutral items---\textit{ink}~(インク), \textit{tree}~(木), \textit{book}~(本), \textit{finger}~(指), \textit{dance}~(踊る). These charged regions are exactly what Jung's complex predicts as measurable structure; here they are read directly from the body. Figure~\ref{fig:individual} shows the five individual spirit spaces---each a spectral geometry of that person's own nodes, coloured by energy---making concrete the claim that the constructed space \emph{is} the individual's spirit. We quantify how individual they are by orthogonal-Procrustes disparity: between-person disparity ($1.74$) exceeds the within-person, session-to-session disparity ($1.61$) only marginally (ratio $1.08$, bootstrap $95\%$ CI $[0.46,\,1.08]$---not reliably above $1$). So although the panels look distinct, individual separation is \emph{not statistically established} at $N=5$; it is a target for the powered study, stated here without overclaim.
+\section{Prospective Stage 2 validation framework}
+The next large-dataset study is planned as a prospective validation stage. This section is a framework, not a completed registration. Before confirmatory data are inspected, the protocol, code version, endpoint definitions, effect directions, success thresholds, exclusions, missing-data rules, and analysis order should be timestamped in a public registry.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\textwidth]{fig_individual_spirit.pdf}
-    \caption{\textbf{Individual spirit spaces.} Each panel is one participant's
-    own constructed space (spectral embedding of their word nodes from latency
-    and skin potential), coloured by node energy $E$ (Eq.~\eqref{eq:energy}).
-    The geometries are visibly distinct across individuals; high-energy (bright)
-    nodes are that person's candidate complexes. Generated by
-    \texttt{scripts/plot\_individual\_spirit.py}.}
-    \label{fig:individual}
-\end{figure}
+\subsection{Design, cohorts, and sample size}
+Stage 2 will use repeated measurements sufficient to estimate reliability and held-out prediction. Sample size will be determined by simulation across plausible reliability, attrition, clustering, and effect-size ranges rather than by treating the unstable Stage 1 estimates as true effects. A discovery cohort will be separated from an independent replication cohort; where cultural generalization is claimed, an additional language or cultural cohort is required. Participant assignment, intervention order, device version, sensor placement, calibration, and acquisition failures will be retained in a machine-readable flow record.
 
-\paragraph{The space is dynamic and individual.} Re-exposure (session 1 $\to$ 2) reshapes the space: response latency falls in $3/5$ individuals (mean $-0.25$\,s) and skin-potential charge in $4/5$ (mean $-0.004$\,mV), i.e.\ the geometry relaxes as concepts become familiar. The space is also strongly \emph{individual}: per-word charge is only weakly shared across people (next section).
+\subsection{Prospective decision table}
+\begin{table}[H]
+\centering\footnotesize
+\caption{\textbf{Prospective validation logic.} Exact endpoints and thresholds will be frozen before confirmatory data inspection.}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.12\textwidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+Hypothesis & Primary validation & Required comparison & Evidence against the hypothesis \\
+\midrule
+$H_{\mathrm{phys}}$ & Held-out behavioral/physiological prediction and a prespecified bodily-self perturbation & Participant-agnostic, lexical, sham, and unperturbed baselines & No incremental prediction or reproducible intervention-sensitive change \\
+$H_{\mathrm{energy}}$ & Association of $C$ with a separately calibrated energetic or information-thermodynamic quantity & Latency-only, arousal-only, and non-energetic nuisance models & No relation to an independent physical quantity after confound control \\
+$H_{\mathrm{complex}}$ & Stable high-$C$ regions predict blinded, independently measured personal salience or complex criteria & Word frequency, valence, latency, and skin-potential components & No reliability or incremental external prediction \\
+$H_{\mathrm{collective}}$ & Prespecified shared semantic structure replicates in independent and cross-cultural samples & Shuffle, lexical-frequency, language, device, site, and demographic baselines & The component disappears after controls or fails external replication \\
+\bottomrule
+\end{tabularx}
+\label{tab:stage2}
+\end{table}
 
-\section{Individual vs.\ collective: tensor decomposition}\label{sec:tensor}
-To separate what is idiosyncratic to a person from what is shared, we stack the cohort as a third-order tensor $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$ ($P=5$ individuals, $W=99$ shared words, $F=3$ bodily features) and analyze its geometry; the full pipeline (build $\to$ tensorize $\to$ spectral $\to$ Tucker $\to$ summarize) runs as a checkpointed \texttt{langgraph-clj} StateGraph.
+\subsection{Analysis hierarchy and leakage control}
+Reliability is the first gate: an unstable representation is not advanced to strong construct claims. The primary $H_{\mathrm{phys}}$ analysis will use participant-level separation of training, validation, and test data, with preprocessing fitted inside the training partition. Baseline comparisons and negative controls will be evaluated on the same held-out observations. Hierarchical models will account for participant, word, session, site, and device structure as appropriate. The key secondary hypotheses will be tested only after the primary analysis plan is executed; multiplicity control, directional contrasts, and any Bayesian decision criteria will be fixed in the registration. Exploratory analyses will be labelled and will not redefine success.
 
-\paragraph{Shape of the shared space.} A graph-Laplacian spectral embedding of the words (Fig.~\ref{fig:manifold}a,b) shows a \textbf{spectral gap} $\approx0.19$ and a participation ratio of $\approx10.9$ effective modes: the shared spirit space is genuinely multi-dimensional yet has a dominant collective coordinate. A Tucker (HOSVD) decomposition at ranks $[3,6,3]$ reconstructs $76\%$ of the variance and saturates near $0.83$ by word-mode rank $\approx12$ (Fig.~\ref{fig:manifold}c). Crucially the decomposition factorizes the tensor into a \textbf{participant mode (the individual spirit)} and \textbf{shared word-modes (structure common across people)}.
+\subsection{Evidence levels}
+We define a cumulative evidence ladder: Level 0, constructibility (the present pilot); Level 1, test--retest reliability; Level 2, held-out prediction; Level 3, response to controlled perturbation; Level 4, independent energetic and complex construct validity; and Level 5, independent and cross-cultural replication of shared structure. Support for a physical model of spirit requires at least Level 3. A collective-unconscious interpretation requires Level 5 and prespecified semantic or cultural structure, not principal-component variance alone.
 
-\paragraph{The collective component (a candidate collective unconscious).} How much of the geometry is shared? We are deliberately conservative here, because with only $P=5$ rows the first principal component mechanically absorbs a large share. Against a within-subject shuffle null: the inter-subject per-word charge correlation is weak but \emph{above chance} ($\bar r=+0.065$, permutation $p=0.038$), whereas the first-PC share ($27\%$) is \emph{indistinguishable} from its mechanical null ($\approx26\%$, $p=0.21$)---so the $27\%$ is \textbf{not} evidence of shared structure, only the baseline. The honest reading is therefore narrow: there is a faint, above-chance shared component (the candidate \emph{collective unconscious}), but its magnitude cannot be estimated at $N=5$, and the variance-share figure should not be read as ``$25\%$ collective.'' This shared component is the natural place to look for cultural/population structure (comparing tensor spaces across language or culture) in the powered study (Fig.~\ref{fig:collective}).
+\subsection{Preregistration and release}
+Before enrollment or confirmatory data access, Stage 2 should be preregistered with a frozen analysis commit. The public package should contain a versioned environment, checksums, synthetic or ethics-compatible derived test data, participant flow, endpoint dictionary, and a one-command reproduction path. Deidentified derived results and code should receive a durable archive identifier; participant-level media remain governed by consent and ethics approval.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\textwidth]{fig_collective.pdf}
-    \caption{\textbf{Individual vs.\ collective structure.}
-    (a) Inter-subject correlation of per-word charge (mean off-diagonal
-    $r=+0.07$, permutation $p=0.038$): a faint but above-chance shared signal on
-    a largely private space. (b) The first-PC variance share ($27\%$) sits at
-    its shuffle-null baseline ($\approx26\%$, $p=0.21$)---i.e.\ a mechanical
-    artifact of $P=5$, \emph{not} evidence of a large collective component.
-    (c) The shared-structure spectrum. Generated by
-    \texttt{scripts/plot\_individual\_spirit.py}.}
-    \label{fig:collective}
-\end{figure}
+\section{Stage 1 pilot results}
+\subsection{Trial-level response landscape}
+All 970 valid trials are shown in Fig.~\ref{fig:landscape}; no percentile trimming is used in the revised display. Because color is computed from the plotted axes, separation of low and high $C$ is expected by construction. It demonstrates measurement coverage, not latent classes. Session-specific latency stability was weak ($r=0.24$, 471 matched participant--word observations).
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=\textwidth]{fig_spirit_manifold.pdf}
-    \caption{\textbf{The spirit space as geometry: individual and shared structure.}
-    (a) Normalized graph-Laplacian spectrum; the gap ($\approx0.19$) marks the
-    dominant collective coordinate (effective modes $\approx10.9$).
-    (b) Three-dimensional spectral embedding---the shared \emph{spirit vector
-    space}---with words coloured by energy.
-    (c) Tucker (HOSVD) explained variance vs.\ word-mode rank; the tensor is
-    low-rank ($\approx0.83$ by rank $\approx12$) with an irreducible individual
-    residual. These are descriptive geometry over $P=5$, not inferential
-    population statistics. Computed by the \texttt{langgraph-clj} StateGraph over
-    \texttt{scripts/spirit\_tensor.py}.}
-    \label{fig:manifold}
+\centering\includegraphics[width=\textwidth]{fig_landscape.pdf}
+\caption{\textbf{Pilot measurements.} (a) Response latency and Channel-2 skin-potential change for 970 valid trials, colored by the descriptive response-cost score $C$. (b) Example continuous skin-potential trace and task events. (c) Session-1 versus session-2 latency for matched participant--word observations.}
+\label{fig:landscape}
 \end{figure}
 
-\paragraph{Visualization.} Because the construction \emph{is} the spirit, it is also something one can look at. Figure~\ref{fig:awe} renders the same quantities---spectral-embedding positions, node energy, and the affinity kernel---through the auxiliary physical pictures of Section~\ref{sec:interp}: the energy landscape as a heat-kernel field (curved-manifold gravity wells), the kernel as luminous filaments, and complexes as bright bioluminescent concentrations, with each individual a distinct nebula beneath the shared manifold. The rendering is generated from the same pipeline (\texttt{scripts/render\_spirit\_awe.py}); it adds no data, only a faithful, high-altitude view of the constructed object.
+\subsection{Participant-specific embeddings}
+The same algorithm produced a two-dimensional response embedding for each participant (Fig.~\ref{fig:individual}). Under $H_{\mathrm{complex}}$, stable high-$C$ regions are candidate complex markers. Visual differences are descriptive, and no independent complex assessment or validated classifier is available in this pilot.
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=\textwidth]{fig_spirit_awe.pdf}
-    \caption{\textbf{The constructed spirit, rendered.} The shared spirit
-    manifold (top) and the five individual spirit spaces (bottom), drawn from
-    the real spectral embedding, node energy, and affinity kernel. The
-    background is the heat-kernel energy field (curved-manifold ``gravity
-    wells''); threads are high-affinity edges; bright nodes are high-energy
-    complexes. A visualization of the same object the paper constructs---no
-    additional data. Generated by \texttt{scripts/render\_spirit\_awe.py}.}
-    \label{fig:awe}
+\centering\includegraphics[width=\textwidth]{fig_individual_spirit.pdf}
+\caption{\textbf{Participant-specific response spaces.} Each panel is a graph-spectral embedding of one participant's word nodes from latency and two skin-potential features; color is $C$. Axes have arbitrary sign and orientation and are not directly comparable without alignment.}
+\label{fig:individual}
 \end{figure}
+
+\subsection{Cross-participant latency and tensor summaries}
+Mean off-diagonal cross-participant latency correlation was $\bar r=0.065$ and exceeded the absolute shuffled statistic in the two-sided permutation test ($p=0.038$). The first principal component explained 27\%, close to the approximately 26\% shuffle-null mean ($p=0.21$; Fig.~\ref{fig:collective}). This is a faint exploratory observation relevant to $H_{\mathrm{collective}}$, but the principal-component result provides no evidence for a large common component and the semantic criteria of the hypothesis were not tested.
+
+\begin{figure}[t]
+\centering\includegraphics[width=\textwidth]{fig_collective.pdf}
+\caption{\textbf{Exploratory cross-participant latency analysis.} (a) Pairwise correlations and their mean, with a two-sided within-participant permutation test. (b) Observed first-PC variance share versus the shuffle null. (c) Latency variance spectrum. These panels analyze latency, not a physiological ``charge.''}
+\label{fig:collective}
+\end{figure}
+
+The tensor had shape $5\times99\times3$. The median-distance kernel scale was $\sigma=4.2109$, the graph eigengap was 0.1948, and the spectrum's participation ratio was 10.89. Rank-$[3,6,3]$ HOSVD reconstructed 75.9\% of variance (Fig.~\ref{fig:manifold}). With only five participants and three features, these values partly reflect dimensional constraints and do not establish a population manifold or a unique ``collective coordinate.''
+
+\begin{figure}[t]
+\centering\includegraphics[width=\textwidth]{fig_spirit_manifold.pdf}
+\caption{\textbf{Descriptive cohort geometry.} Graph-Laplacian spectrum, three-dimensional word embedding, and Tucker reconstruction curve for the $5\times99\times3$ tensor. The summaries are in-sample and descriptive.}
+\label{fig:manifold}
+\end{figure}
+
+\section{Discussion}
+The four hypotheses are the scientific center of this research program, rather than decorative interpretations added after analysis. Stage 1 establishes the first bounded result needed to pursue them: synchronized word-association and skin-potential data can be transformed into participant-specific graph embeddings and a cohort tensor through an auditable computation. Stage 2 converts the program from a broad aspiration into a prospective sequence of reliability, prediction, perturbation, independent validation, and replication tests. It does not predetermine their outcome.
+
+The physical premise becomes scientific only through discriminating measurements. In the present installment no temperature, heat, work, erasure event, or entropy production was measured, so $C$ is an energy hypothesis proxy rather than thermodynamic energy. Similarly, the radial-basis graph is a first operational geometry, not yet a Fisher-metric statistical manifold. Later installments must link the candidate space to calibrated energetic quantities and controlled interventions if $H_{\mathrm{phys}}$ and $H_{\mathrm{energy}}$ are to receive support.
+
+The weak test--retest correlation indicates that measurement noise, learning, state change, or event alignment may be substantial. The small permutation result is hypothesis-generating: it was derived after inspection of a small complete-case subset, without multiplicity control, and the PC analysis was null. A next study should prespecify the primary channel and score, preserve sensor-placement and calibration metadata, retain a participant-flow log, define exclusions before analysis, estimate reliability, and validate embeddings against held-out sessions or external outcomes.
 
 \section{Limitations}
-We state the scope plainly. (1) \textbf{Constructive, not confirmatory:} we build and visualize an object under the stated assumption; we do not claim to have tested ``information $=$ physics $=$ spirit'' as a hypothesis. (2) \textbf{Boundary data pending:} the rubber-hand-illusion measurement of the self-boundary---a core element of the method---is not yet collected; the present construction uses word association and physiology only. (3) \textbf{Power:} $N=5$ (of 11). The shared/collective component is at most faint (inter-subject $r=0.07$, $p=0.04$; its variance share sits at the mechanical null), and per-person distinctness is not statistically established (Procrustes ratio $1.08$, $95\%$ CI $[0.46,1.08]$). (4) \textbf{Descriptive geometry:} spectral gap, participation ratio and Tucker ranks are descriptive over $P=5$, not inferential population statistics. (5) \textbf{Thermodynamics:} Landauer is a motivating analogy; no energetic quantity is measured. The powered study will add RHI boundary data, demographics for the cultural/collective analysis, and a pre-registered pipeline.
+The analytic sample was five of eleven participants and depended on local data availability. Missing raw annex objects and absent or misaligned recordings may introduce selection bias. Sampling at 1 Hz limits temporal interpretation. Channel choice was not preregistered, sensor metadata were incomplete, and no negative-control stimulus set or independent validation cohort was available. Semantic association responses and rubber-hand-illusion data were not analyzed. Statistics were exploratory and no adjustment for multiple analytic choices was applied. The Stage 2 framework is not itself a preregistration: exact endpoints, thresholds, sample size, intervention, and governance require investigator and ethics approval before being frozen. The current repository is not publicly accessible and the deidentified derived dataset is not yet deposited in a durable public archive.
 
-\paragraph{Data and code availability.} All analysis code is bundled (\texttt{scripts/spirit\_tensor.py}, \texttt{make\_landscape\_figure.py}, \texttt{plot\_spirit\_manifold.py}; the construction also runs as a \texttt{langgraph-clj} StateGraph) and regenerates every figure and number from the raw logs. For byte-stable results the analysis pins Python~3.14 / numpy~2.5 and fixed RNG seeds, so the reported permutation $p$-values ($0.038$, $0.21$) and bootstrap CIs are deterministic; each script regenerates its outputs with a single invocation (e.g.\ \texttt{python scripts/spirit\_tensor.py <stage> state.json}). Raw human-subjects recordings (face/voice, consent) contain personal information and are not publicly released; de-identified derived measures are available from the authors under a data-use agreement, consent permitting.
+\section{Data and code availability}
+The analysis code, event-processing logic, and manuscript sources are maintained in the project repository. At the time of this preprint the repository is private and participant-level recordings are not publicly released. A deidentified derived table, versioned code snapshot, environment specification, and checksums should be deposited in a durable archive before the preprint is presented as independently reproducible. Access to underlying research data is subject to ethics approval, consent, and an appropriate data-use process; inquiries may be directed to the corresponding author.
 
 \section{Conclusion}
-We treated ``spirit'' not as a hypothesis to confirm but as an object to construct: under the assumption that the self is information, an individual's spirit \emph{is} the information-geometric space built from their associations and physiology, in which Jungian complexes appear as high-energy regions. A pilot ($N=5$) builds such spaces, locates their complexes from the body alone, and finds the spirit space to be overwhelmingly individual with only a faint, above-chance shared component (candidate collective unconscious, $r=+0.07$, $p=0.04$; its size not estimable at $N=5$) via tensor decomposition. The construction is reproducible and the geometry is real; what remains for the powered, pre-registered study is the physiological boundary (rubber-hand illusion) and the cross-cultural reading of the shared space.
+This preprint combines a Stage 1 feasibility result with a prospective Stage 2 validation framework for a physical hypothesis of spirit. Physical realization, response energy, Jungian complexes, and collective unconscious are explicit targets in a gated evidence program. The present data establish Level 0 constructibility; preregistered reliability, held-out prediction, controlled perturbation, energetic calibration, independent construct validity, and replication determine whether the hypotheses advance.
 
-\bibliographystyle{plain}
+\section*{Author contributions}
+J.K. conceived the project, collected the pilot data, implemented the analysis, and drafted the manuscript. K.T. and T.T. contributed scientific supervision and critical interpretation. All authors should verify and approve the final preprint before submission.
+
+\section*{Funding and competing interests}
+Funding sources and any competing interests must be confirmed by all authors before submission. No unverified declaration is made here.
+
+\begingroup\footnotesize
+\bibliographystyle{unsrt}
 \bibliography{references}
-
+\endgroup
 \end{document}
