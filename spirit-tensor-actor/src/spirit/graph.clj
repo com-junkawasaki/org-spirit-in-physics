@@ -9,7 +9,18 @@
   The heavy linear algebra lives in the Python sidecar (numpy); each node shells
   out, threads the shared JSON state file, and merges the stage's EDN summary
   into the :results channel. Checkpointed via langgraph.checkpoint so the run is
-  auditable and resumable (actor pattern: bounded run, state on a ledger)."
+  auditable and resumable (actor pattern: bounded run, state on a ledger).
+
+  JVM-only: each stage shells out to a Python numpy sidecar via
+  `clojure.java.shell/sh` and reads back a state file via
+  `clojure.java.io`. kotoba-lang/shell's connector is a framed one-value IPC
+  boundary (invoke! returns a decoded value, not sh's {:exit :out :err}) and
+  its sidecar namespace is a companion-process manifest — neither is a
+  faithful replacement for this "run python, take the last EDN line of stdout"
+  pattern. kotoba.lang.fs is capability root-confined and its read returns a
+  UTF-8 String, so the JSON state file here stays on java.io. This is a
+  JVM-only langgraph-clj research pipeline; there is no kotoba-lang head for
+  it yet."
   (:require [langgraph.graph :as g]
             [langgraph.checkpoint :as cp]
             [clojure.java.shell :as sh]
