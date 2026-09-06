@@ -1,4 +1,5 @@
-{:deps {io.github.com-junkawasaki/langgraph-clj {:local/root "../../langgraph-clj"}}
+{:deps {io.github.com-junkawasaki/langgraph-clj {:local/root "../../langgraph-clj"}
+        io.github.kotoba-lang/process {:local/root "../../../kotoba-lang/process"}}
  :paths ["src"]
  :aliases
  {:dev {:override-deps {io.github.com-junkawasaki/langchain-clj

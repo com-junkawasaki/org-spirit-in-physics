@@ -23,7 +23,7 @@
   it yet."
   (:require [langgraph.graph :as g]
             [langgraph.checkpoint :as cp]
-            [clojure.java.shell :as sh]
+            [kotoba.lang.process :as proc]
             [clojure.edn :as edn]
             [clojure.string :as str]
             [clojure.java.io :as io]))
@@ -35,11 +35,11 @@
 (defn run-stage
   "Invoke one numeric stage; return its summary map (parsed from the EDN line)."
   [stage statefile]
-  (let [{:keys [exit out err]} (sh/sh py script stage statefile root)]
-    (when-not (zero? exit)
-      (throw (ex-info (str "stage " stage " failed (exit " exit ")")
-                      {:stage stage :err err})))
-    (let [line (->> (str/split-lines out) (remove str/blank?) last)]
+  (let [{:keys [status stdout stderr]} (proc/exec [py script stage statefile root])]
+    (when-not (zero? status)
+      (throw (ex-info (str "stage " stage " failed (exit " status ")")
+                      {:stage stage :err stderr})))
+    (let [line (->> (str/split-lines stdout) (remove str/blank?) last)]
       (:summary (edn/read-string line)))))
 
 (defn stage-node [stage]
