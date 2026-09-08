@@ -10,7 +10,7 @@
   ClojureScript hash-map does not guarantee insertion-order iteration --
   using an ordered vector-of-pairs here is required for exact behavioral
   parity, not a style choice."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def emotion-keys [:joy :sadness :anger :fear :surprise :disgust :calm :focus :excitement :confusion])
 
@@ -254,7 +254,7 @@
   "-> emotion keyword, or nil if name is metadata / unrecognized."
   [name]
   (when (and name (string? name))
-    (let [name-lower (str/trim (str/lower-case name))]
+    (let [name-lower (str/trim (str/lower name))]
       (when-not (contains? metadata-fields name-lower)
         (let [cleaned (-> name-lower strip-parens strip-word-separators)]
           (or (get emotion-mapping cleaned)
@@ -265,6 +265,6 @@
 (defn metadata-field? [name]
   (if-not (and name (string? name))
     true
-    (let [name-lower (str/trim (str/lower-case name))]
+    (let [name-lower (str/trim (str/lower name))]
       (boolean (or (contains? metadata-fields name-lower)
                    (nil? (normalize-emotion-name name)))))))

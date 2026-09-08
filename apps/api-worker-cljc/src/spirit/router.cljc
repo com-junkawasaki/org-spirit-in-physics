@@ -5,7 +5,7 @@
   .catch per request. CORS mirrors the TS `cors({origin: o => o ?? '*',
   credentials: true, allowHeaders:['Content-Type'], allowMethods:['GET','POST','OPTIONS']})`
   middleware, scoped to `/api/*` exactly as in src/index.ts."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [spirit.http :as http]
             [spirit.routes.assessments :as assessments]
             [spirit.routes.auth :as auth]

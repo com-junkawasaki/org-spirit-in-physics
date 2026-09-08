@@ -25,7 +25,7 @@
             [langgraph.checkpoint :as cp]
             [kotoba.lang.process :as proc]
             [clojure.edn :as edn]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.java.io :as io]))
 
 (def py     (or (System/getenv "SPIRIT_PY") "python3"))

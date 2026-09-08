@@ -7,7 +7,7 @@
   The pure matching functions (split-path/match-route) are .cljc and unit
   tested without a browser; the History-API glue (current-path!/navigate!/
   on-route-change!/init!) touches js/window and only runs in cljs."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 ;; ---------- pure matching ----------
 

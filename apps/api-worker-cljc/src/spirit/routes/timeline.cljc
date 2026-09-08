@@ -7,7 +7,7 @@
   iteration order), so their array ORDER may differ from the TS `Map`
   insertion-order equivalents even though the VALUES are identical — compare
   parity as sets, not as ordered JSON, for these three fields."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [spirit.db :as db]
             [spirit.graph-log :as glog]
             [spirit.http :as http]

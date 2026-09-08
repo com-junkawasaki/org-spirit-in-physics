@@ -15,7 +15,7 @@
   single aggregate count); this port uses an honest substitute — a
   cumulative running count of responses over the visible data — instead of
   fabricating one."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [spirit-ui.d3-interop :as d3]
             [spirit-ui.ir :as ir]))
 
@@ -46,7 +46,7 @@
 (defn- format-value [{:keys [value unit]}]
   (str (.toFixed value (cond (= unit "%") 1 (= unit "ms") 0 :else 2)) (when (seq unit) (str " " unit))))
 
-(defn- safe-id [title] (str/replace (str/lower-case title) #"[^a-z0-9]" "-"))
+(defn- safe-id [title] (str/replace (str/lower title) #"[^a-z0-9]" "-"))
 
 (defn- card [{:keys [title icon value unit sparkline] :as c}]
   (ir/el :div {:key title :class "kpi-card"}
