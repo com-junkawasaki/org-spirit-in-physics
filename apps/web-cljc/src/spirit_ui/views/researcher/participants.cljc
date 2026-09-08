@@ -3,14 +3,14 @@
   ParticipantList.svelte. Drops the decorative (unwired-in-original) CSV
   export / edit / delete buttons; keeps live GET /api/participants + search
   + link-through to the detail page."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [spirit-ui.forms :as forms]
             [spirit-ui.ir :as ir]))
 
 (defn- matches-search? [q p]
   (or (str/blank? q)
-      (str/includes? (str/lower-case (or (:id p) "")) (str/lower-case q))
-      (str/includes? (str/lower-case (or (:gender p) "")) (str/lower-case q))))
+      (str/includes? (str/lower (or (:id p) "")) (str/lower q))
+      (str/includes? (str/lower (or (:gender p) "")) (str/lower q))))
 
 (defn- row [p]
   (ir/el :tr {:key (:id p)}

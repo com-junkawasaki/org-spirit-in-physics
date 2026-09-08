@@ -3,7 +3,8 @@
   hardcoded reference/author data. Message text is the English (en.json)
   paraglide catalog values, copied verbatim as static EDN data — this app
   drops the paraglide multi-language routing (see settings.cljc's ns
-  docstring: i18n is out of scope for this port).")
+  docstring: i18n is out of scope for this port)."
+  (:require [kotoba.lang.text]))
 
 (defn msg
   "Look up a message by key, interpolating `{param}`-style placeholders from
@@ -11,7 +12,7 @@
   paraglide runtime's own `{name}` template syntax used in en.json (e.g.
   `:results-responses` \"{count} responses\").
 
-  GOTCHA: `clojure.string/replace`'s string/string overload still hands the
+  GOTCHA: `kotoba.lang.text/replace`'s string/string overload still hands the
   replacement to native JS `String.prototype.replace`, which treats `$&`,
   `$$`, `$'`, `` $` `` etc. in the REPLACEMENT specially regardless of the
   match arg — the docstring's 'replacement is literal ... except
@@ -22,8 +23,8 @@
   ([messages k] (get messages k))
   ([messages k params]
    (reduce-kv (fn [s param-name v]
-                (clojure.string/replace s (str "{" (name param-name) "}")
-                                         (clojure.string/replace (str v) "$" "$$")))
+                (kotoba.lang.text/replace s (str "{" (name param-name) "}")
+                                         (kotoba.lang.text/replace (str v) "$" "$$")))
               (get messages k) params)))
 
 (def messages

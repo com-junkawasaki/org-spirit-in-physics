@@ -2,7 +2,7 @@
   "HMAC-signed session cookie + auth_sessions CRUD. Port of src/auth/session.ts
   using `js/crypto.subtle` (Web Crypto) interop directly — standard on the
   Workers runtime, no library needed."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [spirit.db :as db]))
 
 (def session-cookie-name "sip_session")
