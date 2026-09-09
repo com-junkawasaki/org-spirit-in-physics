@@ -10,7 +10,7 @@
   never round-tripped through js->clj/clj->js — to avoid any risk of mangling
   their nested base64url fields."
   (:require ["@simplewebauthn/server" :as webauthn]
-            [kotoba.lang.text :as str]
+            [clojure.string :as str]
             [spirit.db :as db]))
 
 (def rp-name "Spirit in Physics")
