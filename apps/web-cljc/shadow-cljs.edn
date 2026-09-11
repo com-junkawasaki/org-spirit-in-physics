@@ -8,7 +8,7 @@
 ;; cljc-ui-IR core (src/spirit_ui/{ir,dom,router,state,api_client,forms}.cljc).
 ;;
 ;; test:  npm test               (cljs.test → out/web-tests.cjs)
-;; build: npm run build:web      (shadow-cljs release web → public/web/js/main.js)
+;; build: npm run build:web      (amu compile --target wasm32-browser web → public/web/js/main.js)
 ;;        npm run build:researcher
 {:source-paths
  ["src" "test"]
