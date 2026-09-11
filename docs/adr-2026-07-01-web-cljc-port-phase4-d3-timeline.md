@@ -15,7 +15,7 @@ Accepted.
 - D3 API surfaceは小さく明確（scale/extent/max/area/line/brushX/axis等、
   force simulation・canvasは不使用）。ADR-2606290000の exemption条項で
   npm interop wrap。
-- データは `apps/api-worker-cljc/src/spirit/routes/timeline.cljc`
+- データは `apps/api-worker-cljc/src/spirit/routes/timeline.cljk`
   （フェーズ0で移植済み）が既に提供、新規バックエンド作業は不要。
 - KPICardsの前回値差分は `Math.random()` ベースのdemo placeholder。
   オーナー判断（2026-07-01）で本移植では省略。
