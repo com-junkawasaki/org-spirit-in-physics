@@ -4,7 +4,7 @@
 ;; 90-docs/adr/2606290000-all-workers-cljc-only-policy.md, modeled on app-aozora appview.
 ;;
 ;; test:  npm test              (cljs.test → out/worker-tests.cjs)
-;; build: npm run build:worker  (shadow-cljs release worker → ESM Worker module)
+;; build: npm run build:worker  (amu compile --target wasm32-browser worker → ESM Worker module)
 {:source-paths
  ["src" "test"]
 
