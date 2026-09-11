@@ -1,7 +1,7 @@
 (ns spirit-ui.data.jung-stimulus-words
   "Port of pkg/experiment/src/jung-stimulus-words.ts — 100-item Jung
   word-association stimulus list (same data as
-  apps/api-worker-cljc/src/spirit/stimulus_words.cljc; duplicated here since
+  apps/api-worker-cljc/src/spirit/stimulus_words.cljk; duplicated here since
   frontend/backend are separate shadow-cljs projects). Pure EDN data.")
 
 (def jung-stimulus-words
