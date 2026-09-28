@@ -1,5 +1,7 @@
 # Peer-review submission readiness — Spirit in Physics
 
+Japanese companion: `PEER_REVIEW_READINESS_ja.md`.
+
 Audit date: 2026-09-28 (JST). Remote baseline: `com-junkawasaki/main` at
 `8d97934a`, fetched on this date. This is a preparation record, not evidence
 that a journal has received or accepted a manuscript.
@@ -43,7 +45,7 @@ multiple journals simultaneously.
 | Current English and Japanese PDFs | Built and visually inspected | Both pilot PDFs compiled with Tectonic on 2026-09-28 (five A4 pages each). Text extraction and an all-page visual review found the revised claims and three retained figures. Final content approval remains pending. |
 | Central claim calibration | Draft complete; scientific sign-off pending | `r=0.24` is pooled latency repeatability, not map reliability; the mean cross-participant latency correlation is small and exploratory, and the first-PC result is null. There is no matched self/target condition or independent self-inclusion rating in this analysis. Have the investigators/statistician review channel choice, missingness, permutation scheme, and multiplicity. |
 | Ethics approval | **Unverified** | The manuscript reports Niigata University approval 2024-0269, dated 2025-03-01. The signed approval letter, approved protocol/version, coverage of recorded modalities, and permission for this analysis/publication were not located in the repository. Verify against the institutional originals. |
-| Participant consent | **Partly inspectable, not verified** | Eleven \`consent.json\` paths exist, but three are unavailable or not parseable locally; eight parse as records with agreement fields. These files do not establish the validity, version, or scope of consent, nor a checked one-to-one match to all five analyzed participants. Verify the originals securely; never publish signatures or raw consent files. |
+| Participant consent | **Partly inspectable, not verified** | Eleven `consent.json` paths exist, but three are unavailable or not parseable locally; eight parse as records with agreement fields. These files do not establish the validity, version, or scope of consent, nor a checked one-to-one match to all five analyzed participants. Verify the originals securely; never publish signatures or raw consent files. |
 | Participant accounting | Described; flow artifact missing | The manuscript describes 11 directories, five analyzed participants and 970 retained trials, with six exclusions. Produce a machine-readable, pseudonymous participant-flow table and audit all unavailable annex objects. |
 | Sensor provenance | **Unverified** | Stable electrode placement, calibration, units, device version, and acquisition-failure metadata were not established by the reviewed package. Confirm from contemporaneous records or retain this limitation. |
 | Reproduction package | **Not public** | No durable public DOI for versioned code, environment, checksums and ethics-compatible derived table is recorded. Do not publish the existing repository wholesale: it contains participant materials and identifiable file names. Prepare a separate disclosure-reviewed snapshot. |

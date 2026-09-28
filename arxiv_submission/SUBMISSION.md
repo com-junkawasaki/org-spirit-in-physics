@@ -1,5 +1,7 @@
 # arXiv submission package — Spirit in Physics
 
+Japanese revision materials: `REVISION_MATERIALS_JA.md`.
+
 For the journal-route decision and current go/no-go evidence, see
 `PEER_REVIEW_READINESS.md`. arXiv is a preprint service and does not conduct
 journal peer review. Rebuild the English and Japanese PDFs after every source

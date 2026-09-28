@@ -1,5 +1,7 @@
 # Response to the 2026-09-25 revision materials
 
+Japanese companion: `REVIEW_RESPONSE_20260925_ja.md`.
+
 Status: author discussion draft, 2026-09-28. The two files in the author's Downloads folder are review inputs, not author instructions, original data, a completed protocol, or coauthor approval. This response records what has been changed and what still needs evidence.
 
 Sources reviewed:

@@ -1,5 +1,7 @@
 # Candidate empirical study: target-specific self-inclusion
 
+Japanese companion: `SELF_INCLUSION_STUDY_PROPOSAL_ja.md`.
+
 Status: **proposal for author and ethics review**, 2026-09-28. No new participants, analyses, results, preregistration or institutional approval are claimed here. This proposal implements the central suggestion of the 2026-09-25 revision plan without treating that plan as an instruction or an approved protocol.
 
 ## Research question
