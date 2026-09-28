@@ -100,7 +100,7 @@
       "@context": "https://schema.org/",
       "@type": "ScholarlyArticle",
       "headline": m.paper_title_full(),
-      "description": m.abstract_text(),
+      "description": "Historical, non-peer-reviewed project draft. Its pilot data do not validate measured thermodynamic energy, Jungian complexes, or a collective-unconscious structure.",
       "datePublished": "2024-11-30",
       "author": authors.map(a => ({
         "@type": "Person",

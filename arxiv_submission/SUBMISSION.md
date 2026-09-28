@@ -1,5 +1,12 @@
 # arXiv submission package — Spirit in Physics
 
+For the first journal peer-review route and current go/no-go evidence, see
+\`PEER_REVIEW_READINESS.md\`. arXiv is a preprint service and does not conduct
+journal peer review. The English and Japanese PDFs were rebuilt from the current
+sources on 2026-09-28 with \`tectonic main.tex\` and \`tectonic main_ja.tex\`.
+The older project website article/PDF must be disclosed as a related prior
+public version; it is not the current analysis.
+
 ## Scientific scope
 
 This revision combines a Stage 1 pilot feasibility result with a prospective

@@ -4,6 +4,12 @@
 
 <h1>{m.logo()}: {m.paper_title_full()}</h1>
 
+<aside class="paper-version-notice" role="note" style="padding:1.25rem;margin:1.5rem 0 2rem;border:2px solid #b45309;border-radius:8px;background:#fff7ed;color:#431407">
+  <strong>Historical draft / 旧稿</strong>
+  <p>This page preserves an earlier, non-peer-reviewed version. Its claims about measured thermodynamic energy, identified Jungian complexes, and a collective-unconscious structure have not been validated by the pilot data. A revised manuscript is being prepared for coauthor review; the material below must not be cited as the current result.</p>
+  <p>このページは査読前の旧稿です。熱力学的エネルギー、ユング心理学的コンプレックス、集合的無意識の構造を測定・同定したという主張は、パイロットデータでは妥当化されていません。改訂原稿は共著者確認に向け準備中です。</p>
+</aside>
+
 <div class="author-section">
   <div class="author-grid">
     <div class="author-item">
