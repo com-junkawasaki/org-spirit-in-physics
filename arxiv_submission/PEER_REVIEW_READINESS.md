@@ -1,6 +1,7 @@
 # Peer-review submission readiness — Spirit in Physics
 
 Japanese companion: `PEER_REVIEW_READINESS_ja.md`.
+Journal fee comparison (Japanese): `PUBLICATION_COSTS_20260928_ja.md`.
 
 Audit date: 2026-09-28 (JST). Remote baseline: `com-junkawasaki/main` at
 `8d97934a`, fetched on this date. This is a preparation record, not evidence
