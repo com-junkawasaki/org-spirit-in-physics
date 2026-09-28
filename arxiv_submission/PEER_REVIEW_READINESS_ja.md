@@ -2,19 +2,23 @@
 
 **確認日：2026年9月28日（日本時間）。** 取得した remote `com-junkawasaki/main` は `8d97934a` です。本資料は投稿準備の記録であり、学術誌が原稿を受理した証拠ではありません。
 
-## 最初の査読依頼先
+## 最初の査読依頼先：既存パイロットを先に出す
 
-最新のレビューでは、最初の実証目的を**対象別自己包含**として検討しています。既存の5名のデータではこの問いに答えられません。**新たな確証データの収集前に研究計画の査読を受ける**なら、第一候補は *Consciousness and Cognition* の **Registered Report 第1段階**です。同誌は自己に関する自然科学的研究を対象に含み、ElsevierのRegistered Report対象誌に掲載されています。第1段階では研究の問い、方法、解析、倫理面を事前に審査します。これは投稿先の提案であり、編集者からの招待や投稿可能な完成原稿ではありません。
+2026年9月28日、川崎さんから「田井中先生・竹内先生には、**現在の論文を先に査読へ出し、届いた意見を見てから次の研究に進む**よう助言された」と補足がありました。これは研究の進め方に関する助言の報告です。両先生が**現行原稿の文章を承認した**という意味ではありません。前版で先に新実験のRegistered Reportを薦めた順序を、この補足に合わせて訂正します。
 
-| 優先順の候補 | 適合する理由 | 投稿前の条件 |
+**第一候補は *Frontiers in Psychology* の Quantitative Psychology and Measurement 部門、原稿種別は Brief Research Report** です。この部門は定量的方法と人の属性の測定を扱い、原稿種別は簡潔な予備的結果や否定的結果を明示的に受け入れています。現行パイロットは要約・方法・結果・考察を備え、PDF本文から抽出した語数は文献を含め約2,016語、図は3点で、4,000語・図表計4点の上限に収まります。投稿時の主題は「単語別応答プロファイルを構成できるか、潜時がどの程度安定するか」です。自己包含を測ったとは主張しません。
+
+ただし、5名の解析標本と弱い再検査相関から、編集者が実質的な測定上の貢献を不足と判断し、外部査読の前に不採択とする可能性があります。**投稿しても査読者の詳細な意見が必ず届くわけではありません。**
+
+| 候補 | 現原稿との適合 | 主な留意点 |
 | --- | --- | --- |
-| *Consciousness and Cognition*、Registered Report 第1段階 | 自己・認知という主題に合い、実験前に設計の査読を受けられる。 | 概念、刺激、除外、必要人数・推定精度、解析、実施可能性、倫理審査の状況を確定する。 |
-| *Frontiers in Psychology*、Consciousness Research and Mindfulness、Registered Report | 当該部門がこの原稿種別を受け付け、予備実験を第1段階に含められる。 | 第1段階は本文3,000語・図表計2点が上限。第2段階の期限、データ公開条件、掲載料を確認する。 |
-| *PLOS ONE*、Registered Report Protocol | 広い領域の実証研究について、参加者募集前の設計審査が可能。 | 方法とデータ管理を具体化し、現行の原稿・倫理・掲載条件を確認する。 |
+| **1. Frontiers in Psychology／Quantitative Psychology and Measurement／Brief Research Report** | 予備的・否定的結果を扱う原稿種別で、現稿の構成と図数が合う。 | 5名の実行可能性結果は狭く、測定法としての妥当性が不足と判断され得る。現行のB型掲載料は採択時CHF 2,500。投稿前に機関負担と最新料金を確認する。 |
+| **2. Frontiers in Psychology／Consciousness Research and Mindfulness／Brief Research Report** | 長期的な自己・意識の問いとは主題上つながる。 | 今回のデータは自己や意識を測っていないため、現原稿との直接の適合は第一候補より弱い。 |
+| **3. PLOS ONE／Research Article** | 技術的に妥当な原著研究や否定的結果を扱う。 | 適切な統制、必要に応じた十分な標本、倫理資料、データ利用可能性などの基準があり、現パイロットの方法面のハードルは高い。 |
 
-以前の *Frontiers* の **Hypothesis and Theory** は、別の理論論文の候補にはなりますが、今回の実証目的で最初に選ぶ原稿種別ではありません。既存の5名のパイロットを独立して投稿する場合も、その原稿自身の科学的確認、倫理、再現資料の条件を満たす必要があります。同じ原稿を複数誌へ同時投稿しません。
+以前第一候補にした *Consciousness and Cognition* の Registered Report 第1段階は、**今回の査読結果を踏まえた後の自己・他対象の新研究**の候補に移します。仮説・理論論文も別の原稿です。同じ原稿を複数誌に同時投稿しません。
 
-投稿先の一次資料：[*Consciousness and Cognition* の対象領域](https://shop.elsevier.com/journals/consciousness-and-cognition/1053-8100)、[ElsevierのRegistered Report対象誌と手順](https://www.elsevier.com/researcher/author/policies-and-guidelines/registered-reports)、[著者向け第1段階の要件](https://www.elsevier.com/en-gb/researcher/author/policies-and-guidelines/registered-reports/author-guidelines)、[Frontiers部門の対象原稿](https://www.frontiersin.org/journals/psychology/sections/consciousness-research-and-mindfulness/about)、[Frontiersの原稿種別](https://www.frontiersin.org/journals/psychology/sections/consciousness-research-and-mindfulness/for-authors/article-types)、[掲載料](https://www.frontiersin.org/journals/psychology/for-authors/publishing-fees)、[PLOS ONEのRegistered Report](https://journals.plos.org/plosone/s/what-we-publish)。提出時には最新版を再確認します。
+2026年9月28日に確認した出版社の資料：[第一候補部門の対象領域・受け付ける原稿種別](https://www.frontiersin.org/journals/psychology/sections/quantitative-psychology-and-measurement/about)、[Brief Research Reportの条件](https://www.frontiersin.org/journals/psychology/sections/quantitative-psychology-and-measurement/for-authors/article-types)、[Frontiersの掲載料](https://www.frontiersin.org/journals/psychology/for-authors/publishing-fees)、[意識研究部門の対象領域](https://www.frontiersin.org/journals/psychology/sections/consciousness-research-and-mindfulness/about)、[PLOS ONEの掲載基準](https://journals.plos.org/plosone/s/criteria-for-publication)、[次研究向けのElsevier Registered Report](https://www.elsevier.com/researcher/author/policies-and-guidelines/registered-reports)。提出時には最新版を再確認します。
 
 ## 投稿前の確認表
 
@@ -29,14 +33,14 @@
 | センサーの由来 | **未確認** | 電極位置、校正、単位、装置の版、取得失敗の安定した記録は確認できなかった。当時の記録で確認し、なければ限界として維持する。 |
 | 再現資料 | **公開されていない** | 版を固定したコード、環境、チェックサム、倫理上公開可能な派生表に永続的な識別子はない。参加者資料や識別可能なファイル名を含む現リポジトリ全体はそのまま公開しない。公開範囲を確認した別パッケージを作る。 |
 | 以前の公開版 | 関係と修正点の申告が必要 | サイトの旧記事・PDFは現原稿より強い結論を含む。現原稿では査読前の先行公開版として説明した。投稿時の書類ではURL、現原稿との関係、修正点を明示する。サイトのソースには旧稿表示を加えたが、公開サイトへの反映は未確認。 |
-| 共著者のフィードバック | **間接的な要約を受領、元資料と承認は未確認** | 9月25日の改訂計画は竹内先生の共有コメントと田井中先生の目的説明を参照する。元コメント・対話記録は提供されず、リポジトリにも見つからなかった。PR #18と#21にはGitHub上のレビュー・コメントがない。対応は `REVIEW_RESPONSE_20260925_ja.md` に記録した。元資料と各著者の最終判断を確認する。 |
+| 共著者のフィードバック | **進め方の助言を本人から報告、原稿承認は未確認** | 川崎さんによれば、田井中先生・竹内先生は現論文を先に査読へ出してから次研究へ進むよう助言した。9月25日の改訂計画には以前の意見の要約もある。元コメント・対話記録と今回の原稿の承認はリポジトリ等で確認できず、PR #18と#21にはGitHub上のレビュー・コメントがない。投稿前に各著者の最終判断を記録する。 |
 | 著者と申告 | **各著者の確認待ち** | 著者順、所属、貢献、最終原稿の承認、資金、利益相反を確認する。パイロット草稿から未確認の申告文は外した。必要な申告は事実を確認してから記す。 |
 | 新たな実証設計 | **提案のみ** | `SELF_INCLUSION_STUDY_PROPOSAL_ja.md` は同一語による自己・他対象条件、独立評定、別日再測定を提案する。概念、人数、解析、倫理の範囲を定め、確証的収集前に計画を登録する。旧5名の結果と呼び替えない。 |
 | 投稿先ごとの書類 | **未作成** | 投稿時点の規定を確認し、表題紙、要約、倫理・データ声明、図、旧プレプリントの申告、査読者候補、費用を整える。カバーレターは共著者確認後に用意する。 |
 
 ## 現時点の判定
 
-**本日の学術誌への投稿は見送る。** 改訂したパイロットと新実験案は共著者の科学的確認に回せますが、元のフィードバックと最終承認、倫理・同意の原本、公開可能な再現資料は未確認です。草稿やPRがあるだけでは査読依頼になりません。投稿システムで受領されたことを確認して初めて投稿済みと扱います。
+**既存パイロットを最初の査読投稿に向けて整える。今日はまだ送信できる状態ではない。** 倫理承認・同意の原本、各著者によるこの版の承認、図と数値、公開可能な再現資料を確認する。これらは投稿前の確認事項であり、新実験の完了まで投稿先選びを延期する理由ではありません。草稿やPRだけでは査読依頼にならず、投稿システムで受領されて初めて投稿済みと扱います。
 
 ## 実施した確認
 

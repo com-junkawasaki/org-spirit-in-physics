@@ -11,6 +11,8 @@ Sources reviewed:
 
 The revision plan cites Takeuchi's shared comments (`kawasaki_takeuchi_discussion.md`) and Tainaka's 2026-09-25 explanation of the intended construct. Those original items were not supplied here or found in the reviewed repository. The plan is evidence of a proposed synthesis of their feedback; it is **not** evidence that either researcher approved this manuscript or the proposed experiment.
 
+**Later clarification from Kawasaki (2026-09-28):** Tainaka and Takeuchi advised submitting the present paper for peer review, considering the feedback received, and then moving to the next study. Accordingly, the existing pilot is the first intended journal submission and the self-inclusion experiment is the next research step. This reported strategic advice does not itself approve the exact manuscript text; see the updated submission-readiness route.
+
 ## Disposition
 
 | Review point | Disposition in this branch | Remaining check |
