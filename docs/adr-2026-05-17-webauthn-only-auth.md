@@ -16,7 +16,7 @@ deep link 許可ドメインが宣言されていた。
 
 直近の作業で次の事実が判明した。
 
-- `CLAUDE.md` に `CLERK_SECRET_KEY` (`sk_live_...`) が平文で commit されて
+- `AGENTS.md` に `CLERK_SECRET_KEY` (`sk_live_...`) が平文で commit されて
   いた。git 履歴に残存しているため、当該シークレットは漏洩済みと
   見なす必要がある。
 - `apps/api-worker` (`Hono` + LangGraph Pregel + Kysely-D1 + R2) はすでに
@@ -122,7 +122,7 @@ Clerk を完全に除去する。サーバー側は `apps/api-worker` が D1 を
      セクションから Clerk を外し、WebAuthn / 自前認証 + Cloudflare の
      記述に置換。
    - `BUDGET_LIMITS.md` の Clerk MAU 行を WebAuthn 自前運用に置換。
-   - `claude.md` (= `CLAUDE.md`) の Clerk セクションを WebAuthn セクション
+   - `claude.md` (= `AGENTS.md`) の Clerk セクションを WebAuthn セクション
      に書き換え。
    - Clerk 関連 leaked secret は revoke 対象として残す
      (このリポジトリ外作業)。
@@ -187,7 +187,7 @@ tradeoffs:
 - `apps/researcher/src/routes/+layout.svelte`
 - `apps/mobile/capacitor.config.{ts,json}` (allowNavigation から Clerk
   ドメイン削除)
-- `claude.md` (= `CLAUDE.md`) と `BUDGET_LIMITS.md`
+- `claude.md` (= `AGENTS.md`) と `BUDGET_LIMITS.md`
 
 型チェック:
 

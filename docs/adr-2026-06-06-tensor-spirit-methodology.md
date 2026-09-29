@@ -254,7 +254,7 @@ point inside a relation field rather than an isolated individual.
 (PR #24) carried three browser viewers and named the Canvas 2D one canonical,
 with the KAMI/WebGPU and Three.js variants as experimental. None of the three
 was landed, because all three conflict with the workspace 3D rule
-(`com-junkawasaki/root` CLAUDE.md, "3D はすべて kami-engine を使う"):
+(`com-junkawasaki/root` AGENTS.md, "3D はすべて kami-engine を使う"):
 
 - the Canvas 2D viewer cannot be the authoritative 3D surface; Canvas 2D is
   allowed only for non-3D overlays, diagrams, thumbnails, and explicitly
