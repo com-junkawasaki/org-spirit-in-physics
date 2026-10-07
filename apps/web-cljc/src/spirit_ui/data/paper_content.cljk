@@ -180,7 +180,7 @@
   {"@context" "https://schema.org/"
    "@type" "ScholarlyArticle"
    "headline" (msg messages :paper-title-full)
-   "description" (msg messages :abstract-text)
+   "description" "Historical, non-peer-reviewed project draft. Its pilot data do not validate measured thermodynamic energy, Jungian complexes, or a collective-unconscious structure."
    "datePublished" "2024-11-30"
    "author" (mapv (fn [a] (cond-> {"@type" "Person" "name" (:name a) "affiliation" {"@type" "Organization" "name" (:affiliation a)}}
                             (:email a) (assoc "email" (:email a))))

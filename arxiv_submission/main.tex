@@ -1,46 +1,39 @@
+\ifdefined\sjpsubmission
+\documentclass[a4paper,12pt]{article}
+\else
 \documentclass[a4paper,11pt]{article}
+\fi
 \usepackage{iftex}
-\ifPDFTeX\usepackage[utf8]{inputenc}\usepackage[T1]{fontenc}\else\usepackage{fontspec}\fi
-\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,float,hyperref,geometry,cite}
+\ifPDFTeX\usepackage[utf8]{inputenc}\usepackage[T1]{fontenc}\else\usepackage{fontspec}\ifdefined\sjpsubmission\setmainfont{Times New Roman}\fi\fi
+\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,float,hyperref,geometry,natbib}
+\ifdefined\sjpsubmission\usepackage{setspace}\doublespacing\fi
 \geometry{margin=1in}
 \hypersetup{hidelinks}
 \emergencystretch=2em
-\title{\textbf{Spirit in Physics:}\\\large A falsifiable physical hypothesis of spirit, pilot feasibility study, and prospective validation framework}
-\author{Jun Kawasaki$^{1}$, Kazuki Tainaka$^{2}$, Tomonori Takeuchi$^{3}$\\
+\title{Spirit in Physics: Word-association latency and skin-potential response profiles in a five-participant pilot study}
+\ifdefined\sjpblind\author{}\date{}\else\author{Jun Kawasaki$^{1}$, Kazuki Tainaka$^{2}$, Tomonori Takeuchi$^{3}$\\
 \small $^{1}$Graduate School of Medical and Dental Sciences, Niigata University\\
 \small $^{2}$Brain Research Institute, Niigata University, Japan\\
 \small $^{3}$Department of Biomedicine, Aarhus University, Denmark\\
 \small \texttt{root@junkawasaki.com}}
-\date{August 23, 2026}
+\date{October 7, 2026 (coauthor review draft; not submitted)}\fi
 
 \begin{document}
 \maketitle
 \begin{abstract}
-\emph{Spirit in Physics} advances the working hypothesis that spirit is a physically realized, information-bearing organization whose structure can be measured. Participant-specific response manifolds are proposed as an operational approximation; response energy, Jungian complexes, and a component corresponding to the collective unconscious are explicit test targets. Stage 1 asks whether repeated word-association measurements can be converted into auditable geometries. Eleven participant directories were present; five contributed 970 valid clock-aligned trials over two sessions and 99 shared stimulus words. Test--retest latency correlation was weak ($r=0.24$ across 471 matched participant--word pairs). Mean cross-participant latency correlation was small ($\bar r=0.065$; two-sided permutation $p=0.038$), whereas the first-PC share (27\%) did not exceed its shuffle null (approximately 26\%, $p=0.21$). A rank-$[3,6,3]$ tensor approximation described 75.9\% of variance. We therefore pair the feasibility result with a prospective Stage 2 framework: $H_{\mathrm{phys}}$ is primary; $H_{\mathrm{complex}}$ and $H_{\mathrm{collective}}$ are key secondary hypotheses; and $H_{\mathrm{energy}}$ is a mechanistic long-term hypothesis requiring calibrated physical quantities. The framework prespecifies independent replication, held-out prediction, controlled perturbation, external construct validation, negative controls, and falsification conditions. Stage 1 supports construction feasibility, not proof of the four hypotheses.
+We evaluated the feasibility of constructing participant-specific word-association response profiles from latency and skin-potential recordings and examined the repeatability of response latency. Eleven participant directories were present; five provided 970 valid clock-aligned trials over two sessions and 99 shared stimulus words. The descriptive pooled correlation between sessions across 471 matched participant--word pairs was weak ($r=0.24$); it is not an estimate of participant-level or map reliability. Mean cross-participant latency correlation was small ($\bar r=0.065$; exploratory two-sided permutation $p=0.038$), while the first principal-component variance share (27\%) was close to its shuffle-null mean (approximately 26\%; $p=0.21$). An in-sample rank-$[3,6,3]$ tensor approximation described 75.9\% of variance. The available records could be processed into descriptive profiles, but the weak pooled repeatability, small selected sample, and incomplete sensor provenance limit their interpretation. No independent criterion for psychological meaning was measured. This feasibility study does not validate a psychological construct or a clinically useful measurement in this sample.
 \end{abstract}
 
+\noindent\textbf{Keywords:} word association; response latency; skin potential; test--retest reliability; feasibility study
+
 \section{Introduction}
-Reaction time and autonomic activity during word association have long been used to study stimulus-linked variation in human responses \cite{Jung1910}. Modern graph and tensor methods provide compact ways to summarize such multivariate observations \cite{KoldaBader2009}. They do not, by themselves, establish a psychological construct or causal mechanism.
+Word-association latency and autonomic activity can vary with the stimulus and the participant \citep{Jung1910}. Graph and tensor methods can summarize these multivariate measurements \citep{KoldaBader2009}, but a constructed geometry has no psychological meaning without reliability and independent validation.
 
-Information theory and the physical cost of information processing motivate the project's physical premise \cite{Shannon1948,Landauer1961,Berut2012}. The long-term program asks whether the informational organization called spirit has a measurable physical realization. Analytical psychology and the rubber-hand illusion \cite{Botvinick1998} provide candidate structures and bodily-boundary perturbations through which that premise can be tested.
+This pilot asks whether existing word-association events and skin-potential recordings can be aligned to form participant-specific descriptive profiles, and how repeatable the response latency is across the two sessions. We report the available sample, missing records, signal-processing choices, and exploratory cross-participant summaries so that the limits of the resulting profiles can be assessed. No independent criterion was collected to validate what the profiles represent.
 
-The objective of the program is therefore stronger than visualization: to accumulate reproducible, intervention-sensitive evidence capable of supporting or falsifying a physical model of spirit. The objective of this first installment is narrower: to determine whether latency and skin-potential recordings can be transformed into an auditable candidate representation and to identify which parts of the hypothesis remain untested.
-
-\section{Working premise and testable hypotheses}
-We adopt the following premise: a person's spirit is physically realized as an information-bearing organization of bodily and cognitive states. The measured manifold is not declared identical to that organization; it is a candidate model whose adequacy must be tested by prediction, perturbation, and replication. For Stage 2, $H_{\mathrm{phys}}$ is the primary hypothesis, $H_{\mathrm{complex}}$ and $H_{\mathrm{collective}}$ are key secondary hypotheses, and $H_{\mathrm{energy}}$ is mechanistic and long-term until a calibrated physical quantity is available.
-
-\begin{description}\small\setlength{\itemsep}{1pt}\setlength{\parsep}{0pt}
-\item[$H_{\mathrm{phys}}$:] If spirit has a physical realization, its estimated state should reproducibly predict held-out behavioral and physiological responses and should change systematically under controlled perturbations of bodily self and information processing.
-\item[$H_{\mathrm{energy}}$:] Regions requiring greater response latency and autonomic change are observable proxies for higher response cost. A physical-energy interpretation additionally requires calibrated measurements linking the proxy to energetic or information-thermodynamic quantities; the present score alone is insufficient.
-\item[$H_{\mathrm{complex}}$:] Stable high-cost regions should correspond to independently assessed, personally salient Jungian complexes and predict response content or physiology beyond the variables used to construct the regions.
-\item[$H_{\mathrm{collective}}$:] After individual and technical effects are controlled, a replicable cross-participant component should remain and should generalize across samples. Its relation to Jung's collective unconscious is supported only if it also shows theoretically predicted semantic or cultural structure.
-\end{description}
-
-Failure of out-of-sample prediction, perturbation sensitivity, reliability, or independent construct validation would count against the corresponding hypothesis. The current pilot principally addresses whether the candidate representation can be constructed; it provides only exploratory evidence relevant to the remaining hypotheses.
-
-\section{Stage 1 pilot methods}
+\section{Methods}
 \subsection{Ethics and consent}
-Project materials report approval by Niigata University (approval 2024-0269; March 1, 2025). The study interface required acknowledgment of the research purpose, voluntary participation, the right to withdraw without disadvantage, and audio/video recording before registration. The approval letter and retained participant-level consent records were not part of the reviewed analysis package; their completeness must be confirmed before submission.
+Project materials report approval by Niigata University (approval 2024-0269; March 1, 2025). The study interface required acknowledgment of the research purpose, voluntary participation, the right to withdraw without disadvantage, and audio/video recording before registration.
 
 \subsection{Participants and analytic set}
 Eleven participant directories were present. Six could not enter the complete-record analysis: three continuous-recording files were unavailable git-annex pointers, two directories contained no physiological CSV, and one recording did not overlap the task-event clock. Five participants contributed analyzable synchronized records. This was an availability-based analytic subset, not a random or prospectively selected sample. No demographic or clinical inference is attempted.
@@ -57,7 +50,7 @@ Within each participant, trials were averaged by stimulus word. The three featur
 \begin{equation}
 C(w)=z\{\mathrm{latency}(w)\}+z\{\Delta SP_{Ch2}(w)\}.
 \end{equation}
-This dimensionless score is a candidate proxy under $H_{\mathrm{energy}}$, not a direct measurement of physical energy. Its validation requires independent energetic or information-thermodynamic measurements.
+This dimensionless index combines latency and skin-potential change for display. It is not a measure of self-inclusion, physiological energy expenditure, or information-thermodynamic work.
 
 After feature standardization, squared Euclidean distances generated the radial-basis affinity
 \begin{equation}
@@ -66,45 +59,13 @@ W_{ij}=\exp\{-\lVert x_i-x_j\rVert^2/\sigma^2\},
 where $\sigma$ was the median nonzero pairwise distance. Coordinates were the nontrivial low-order eigenvectors of the symmetric normalized graph Laplacian $L_{sym}=I-D^{-1/2}WD^{-1/2}$. This is a graph-spectral response embedding, not Fisher information geometry.
 
 \subsection{Cohort tensor and exploratory statistics}
-Participant-by-word means were assembled as $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$ with $P=5$, $W=99$, and $F=3$. Missing cells were imputed first by the word--feature mean and then by the feature mean. Each feature was standardized across the participant--word plane. A truncated HOSVD/Tucker approximation \cite{KoldaBader2009} used ranks $[3,6,3]$. The graph spectrum, participation ratio, and reconstructed variance are descriptive summaries whose ranks were not selected on an independent sample.
+Participant-by-word means were assembled as $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$ with $P=5$, $W=99$, and $F=3$. Missing cells were imputed first by the word--feature mean and then by the feature mean. Each feature was standardized across the participant--word plane. A truncated HOSVD/Tucker approximation \citep{KoldaBader2009} used ranks $[3,6,3]$. The graph spectrum, participation ratio, and reconstructed variance are descriptive summaries whose ranks were not selected on an independent sample.
 
-Test--retest stability was Pearson correlation of session-1 and session-2 latency over available matched participant--word pairs. Cross-participant structure was evaluated from the participant-by-word latency matrix. The mean off-diagonal Pearson correlation and first-principal-component variance share were compared with null distributions from 2,000 within-participant word permutations using seed 7. The correlation test was two-sided. These analyses were exploratory, were not preregistered, and no multiplicity-adjusted confirmatory claim is made.
+A descriptive pooled test--retest statistic was the Pearson correlation of session-1 and session-2 latency over available matched participant--word pairs. Because pairs are clustered within five participants and words, this pooled statistic is not an independent-observation estimate of population reliability or participant-specific map stability. Cross-participant structure was evaluated from the participant-by-word latency matrix. The mean off-diagonal Pearson correlation and first-principal-component variance share were compared with null distributions from 2,000 within-participant word permutations using seed 7. The correlation test was two-sided. These analyses were exploratory, were not preregistered, and no multiplicity-adjusted confirmatory claim is made.
 
-\section{Prospective Stage 2 validation framework}
-The next large-dataset study is planned as a prospective validation stage. This section is a framework, not a completed registration. Before confirmatory data are inspected, the protocol, code version, endpoint definitions, effect directions, success thresholds, exclusions, missing-data rules, and analysis order should be timestamped in a public registry.
-
-\subsection{Design, cohorts, and sample size}
-Stage 2 will use repeated measurements sufficient to estimate reliability and held-out prediction. Sample size will be determined by simulation across plausible reliability, attrition, clustering, and effect-size ranges rather than by treating the unstable Stage 1 estimates as true effects. A discovery cohort will be separated from an independent replication cohort; where cultural generalization is claimed, an additional language or cultural cohort is required. Participant assignment, intervention order, device version, sensor placement, calibration, and acquisition failures will be retained in a machine-readable flow record.
-
-\subsection{Prospective decision table}
-\begin{table}[H]
-\centering\footnotesize
-\caption{\textbf{Prospective validation logic.} Exact endpoints and thresholds will be frozen before confirmatory data inspection.}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.12\textwidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
-\toprule
-Hypothesis & Primary validation & Required comparison & Evidence against the hypothesis \\
-\midrule
-$H_{\mathrm{phys}}$ & Held-out behavioral/physiological prediction and a prespecified bodily-self perturbation & Participant-agnostic, lexical, sham, and unperturbed baselines & No incremental prediction or reproducible intervention-sensitive change \\
-$H_{\mathrm{energy}}$ & Association of $C$ with a separately calibrated energetic or information-thermodynamic quantity & Latency-only, arousal-only, and non-energetic nuisance models & No relation to an independent physical quantity after confound control \\
-$H_{\mathrm{complex}}$ & Stable high-$C$ regions predict blinded, independently measured personal salience or complex criteria & Word frequency, valence, latency, and skin-potential components & No reliability or incremental external prediction \\
-$H_{\mathrm{collective}}$ & Prespecified shared semantic structure replicates in independent and cross-cultural samples & Shuffle, lexical-frequency, language, device, site, and demographic baselines & The component disappears after controls or fails external replication \\
-\bottomrule
-\end{tabularx}
-\label{tab:stage2}
-\end{table}
-
-\subsection{Analysis hierarchy and leakage control}
-Reliability is the first gate: an unstable representation is not advanced to strong construct claims. The primary $H_{\mathrm{phys}}$ analysis will use participant-level separation of training, validation, and test data, with preprocessing fitted inside the training partition. Baseline comparisons and negative controls will be evaluated on the same held-out observations. Hierarchical models will account for participant, word, session, site, and device structure as appropriate. The key secondary hypotheses will be tested only after the primary analysis plan is executed; multiplicity control, directional contrasts, and any Bayesian decision criteria will be fixed in the registration. Exploratory analyses will be labelled and will not redefine success.
-
-\subsection{Evidence levels}
-We define a cumulative evidence ladder: Level 0, constructibility (the present pilot); Level 1, test--retest reliability; Level 2, held-out prediction; Level 3, response to controlled perturbation; Level 4, independent energetic and complex construct validity; and Level 5, independent and cross-cultural replication of shared structure. Support for a physical model of spirit requires at least Level 3. A collective-unconscious interpretation requires Level 5 and prespecified semantic or cultural structure, not principal-component variance alone.
-
-\subsection{Preregistration and release}
-Before enrollment or confirmatory data access, Stage 2 should be preregistered with a frozen analysis commit. The public package should contain a versioned environment, checksums, synthetic or ethics-compatible derived test data, participant flow, endpoint dictionary, and a one-command reproduction path. Deidentified derived results and code should receive a durable archive identifier; participant-level media remain governed by consent and ethics approval.
-
-\section{Stage 1 pilot results}
+\section{Results}
 \subsection{Trial-level response landscape}
-All 970 valid trials are shown in Fig.~\ref{fig:landscape}; no percentile trimming is used in the revised display. Because color is computed from the plotted axes, separation of low and high $C$ is expected by construction. It demonstrates measurement coverage, not latent classes. Session-specific latency stability was weak ($r=0.24$, 471 matched participant--word observations).
+All 970 valid trials are shown in Fig.~\ref{fig:landscape}; no percentile trimming is used in the revised display. Because color is computed from the plotted axes, separation of low and high $C$ is expected by construction. It demonstrates measurement coverage, not latent classes. The descriptive pooled session-1/session-2 latency correlation was weak ($r=0.24$, 471 matched participant--word observations). Participant-level reliability estimates and confidence intervals remain to be calculated from a disclosure-reviewed derived table.
 
 \begin{figure}[t]
 \centering\includegraphics[width=\textwidth]{fig_landscape.pdf}
@@ -113,7 +74,7 @@ All 970 valid trials are shown in Fig.~\ref{fig:landscape}; no percentile trimmi
 \end{figure}
 
 \subsection{Participant-specific embeddings}
-The same algorithm produced a two-dimensional response embedding for each participant (Fig.~\ref{fig:individual}). Under $H_{\mathrm{complex}}$, stable high-$C$ regions are candidate complex markers. Visual differences are descriptive, and no independent complex assessment or validated classifier is available in this pilot.
+The same algorithm produced a two-dimensional response embedding for each participant (Fig.~\ref{fig:individual}). Visual differences are descriptive. No independently assessed personal-salience or complex criterion, or validated classifier, is available in this pilot.
 
 \begin{figure}[t]
 \centering\includegraphics[width=\textwidth]{fig_individual_spirit.pdf}
@@ -122,7 +83,7 @@ The same algorithm produced a two-dimensional response embedding for each partic
 \end{figure}
 
 \subsection{Cross-participant latency and tensor summaries}
-Mean off-diagonal cross-participant latency correlation was $\bar r=0.065$ and exceeded the absolute shuffled statistic in the two-sided permutation test ($p=0.038$). The first principal component explained 27\%, close to the approximately 26\% shuffle-null mean ($p=0.21$; Fig.~\ref{fig:collective}). This is a faint exploratory observation relevant to $H_{\mathrm{collective}}$, but the principal-component result provides no evidence for a large common component and the semantic criteria of the hypothesis were not tested.
+Mean off-diagonal cross-participant latency correlation was $\bar r=0.065$ and exceeded the absolute shuffled statistic in the two-sided permutation test ($p=0.038$). The first principal component explained 27\%, close to the approximately 26\% shuffle-null mean ($p=0.21$; Fig.~\ref{fig:collective}). This small exploratory association can reflect common lexical or task effects. The principal-component result does not support a large common component; no Jungian construct was tested.
 
 \begin{figure}[t]
 \centering\includegraphics[width=\textwidth]{fig_collective.pdf}
@@ -130,38 +91,34 @@ Mean off-diagonal cross-participant latency correlation was $\bar r=0.065$ and e
 \label{fig:collective}
 \end{figure}
 
-The tensor had shape $5\times99\times3$. The median-distance kernel scale was $\sigma=4.2109$, the graph eigengap was 0.1948, and the spectrum's participation ratio was 10.89. Rank-$[3,6,3]$ HOSVD reconstructed 75.9\% of variance (Fig.~\ref{fig:manifold}). With only five participants and three features, these values partly reflect dimensional constraints and do not establish a population manifold or a unique ``collective coordinate.''
-
-\begin{figure}[t]
-\centering\includegraphics[width=\textwidth]{fig_spirit_manifold.pdf}
-\caption{\textbf{Descriptive cohort geometry.} Graph-Laplacian spectrum, three-dimensional word embedding, and Tucker reconstruction curve for the $5\times99\times3$ tensor. The summaries are in-sample and descriptive.}
-\label{fig:manifold}
-\end{figure}
+The tensor had shape $5\times99\times3$. The median-distance kernel scale was $\sigma=4.2109$, the graph eigengap was 0.1948, and the spectrum's participation ratio was 10.89. Rank-$[3,6,3]$ HOSVD reconstructed 75.9\% of variance. With only five participants and three features, these values partly reflect dimensional constraints and do not establish a population manifold or a unique ``collective coordinate.''
 
 \section{Discussion}
-The four hypotheses are the scientific center of this research program, rather than decorative interpretations added after analysis. Stage 1 establishes the first bounded result needed to pursue them: synchronized word-association and skin-potential data can be transformed into participant-specific graph embeddings and a cohort tensor through an auditable computation. Stage 2 converts the program from a broad aspiration into a prospective sequence of reliability, prediction, perturbation, independent validation, and replication tests. It does not predetermine their outcome.
+The analysis shows that the available event and signal records can be transformed into word-linked descriptive profiles. The principal measurement issue is weak pooled latency repeatability, which limits the interpretation of any derived map. The five-person availability-based subset also creates selection risk. These results justify improving acquisition and evaluating reliability in a separately designed study; they do not establish the validity of a psychological measure.
 
-The physical premise becomes scientific only through discriminating measurements. In the present installment no temperature, heat, work, erasure event, or entropy production was measured, so $C$ is an energy hypothesis proxy rather than thermodynamic energy. Similarly, the radial-basis graph is a first operational geometry, not yet a Fisher-metric statistical manifold. Later installments must link the candidate space to calibrated energetic quantities and controlled interventions if $H_{\mathrm{phys}}$ and $H_{\mathrm{energy}}$ are to receive support.
+The pooled latency correlation is not an estimate of participant-level or map reliability. The small cross-participant correlation is exploratory and may reflect shared words or task structure; the first-PC comparison did not distinguish the observed result from the shuffle null. The in-sample tensor reconstruction likewise does not show predictive validity. The response-cost score and graph coordinates are descriptive transformations of the recorded features.
 
-The weak test--retest correlation indicates that measurement noise, learning, state change, or event alignment may be substantial. The small permutation result is hypothesis-generating: it was derived after inspection of a small complete-case subset, without multiplicity control, and the PC analysis was null. A next study should prespecify the primary channel and score, preserve sensor-placement and calibration metadata, retain a participant-flow log, define exclusions before analysis, estimate reliability, and validate embeddings against held-out sessions or external outcomes.
+The next empirical study should first address the missing acquisition records, channel metadata, participant-level repeatability, and independent validation criteria. Its protocol and sample-size rationale require separate approval before data collection.
 
 \section{Limitations}
-The analytic sample was five of eleven participants and depended on local data availability. Missing raw annex objects and absent or misaligned recordings may introduce selection bias. Sampling at 1 Hz limits temporal interpretation. Channel choice was not preregistered, sensor metadata were incomplete, and no negative-control stimulus set or independent validation cohort was available. Semantic association responses and rubber-hand-illusion data were not analyzed. Statistics were exploratory and no adjustment for multiple analytic choices was applied. The Stage 2 framework is not itself a preregistration: exact endpoints, thresholds, sample size, intervention, and governance require investigator and ethics approval before being frozen. The current repository is not publicly accessible and the deidentified derived dataset is not yet deposited in a durable public archive.
+The analytic sample was five of eleven participants and depended on local data availability. Missing raw annex objects and absent or misaligned recordings may introduce selection bias. Sampling at 1 Hz limits temporal interpretation. Channel choice was not preregistered, sensor metadata were incomplete, and no negative-control stimulus set or independent validation cohort was available. Semantic association responses and rubber-hand-illusion data were not analyzed. Statistics were exploratory and no adjustment for multiple analytic choices was applied. Participant-level map repeatability and criterion validity were not measured. Age, gender and other sample characteristics have not yet been verified against source records and cannot be reported in this draft. No prospective sample-size calculation was performed for this availability-based pilot. The current repository is not publicly accessible and the deidentified derived dataset is not yet deposited in a durable public archive.
 
 \section{Data and code availability}
-The analysis code, event-processing logic, and manuscript sources are maintained in the project repository. At the time of this preprint the repository is private and participant-level recordings are not publicly released. A deidentified derived table, versioned code snapshot, environment specification, and checksums should be deposited in a durable archive before the preprint is presented as independently reproducible. Access to underlying research data is subject to ethics approval, consent, and an appropriate data-use process; inquiries may be directed to the corresponding author.
+The analysis code, event-processing logic, and manuscript sources are maintained in the project repository. At the time of manuscript preparation the repository is private and participant-level recordings are not publicly released. A deidentified derived table, versioned code snapshot, environment specification, and checksums have not yet been deposited in a durable archive; the present analysis should therefore not be described as independently reproducible. Access to underlying research data is subject to ethics approval, consent, and an appropriate data-use process; inquiries may be directed to the corresponding author.
+
+\section*{Data transparency appendix}
+An earlier, non-peer-reviewed public project article and PDF discussed some of the same pilot recordings within a broader conceptual account. The present manuscript uses those recordings for a narrower empirical analysis of response latency, skin-potential change, descriptive participant-specific embeddings, and exploratory cross-participant summaries. The public version did not report this manuscript as a peer-reviewed journal article. The editor has been given its title and URL in the cover letter so that the overlap can be assessed while preserving anonymous review.
+
+\ifdefined\sjpblind\else\section{Earlier public version}
+An earlier, non-peer-reviewed project website article and PDF presented these records in a broader conceptual framework and made stronger interpretive claims. The present manuscript is a substantially narrowed analysis of the empirical pilot. The related public version must be disclosed to the editor; see \url{https://spirit-in-physics.org/paper}.
+
+\fi
 
 \section{Conclusion}
-This preprint combines a Stage 1 feasibility result with a prospective Stage 2 validation framework for a physical hypothesis of spirit. Physical realization, response energy, Jungian complexes, and collective unconscious are explicit targets in a gated evidence program. The present data establish Level 0 constructibility; preregistered reliability, held-out prediction, controlled perturbation, energetic calibration, independent construct validity, and replication determine whether the hypotheses advance.
-
-\section*{Author contributions}
-J.K. conceived the project, collected the pilot data, implemented the analysis, and drafted the manuscript. K.T. and T.T. contributed scientific supervision and critical interpretation. All authors should verify and approve the final preprint before submission.
-
-\section*{Funding and competing interests}
-Funding sources and any competing interests must be confirmed by all authors before submission. No unverified declaration is made here.
+This five-participant pilot shows that the available word-association and skin-potential records can be transformed into descriptive response profiles. The weak pooled latency correlation, missing sensor provenance, and lack of independent validation prevent a reliability or validity claim for the derived profiles. A larger, prospectively specified reliability study is needed before these profiles can support psychological interpretation.
 
 \begingroup\footnotesize
-\bibliographystyle{unsrt}
+\bibliographystyle{apalike}
 \bibliography{references}
 \endgroup
 \end{document}
