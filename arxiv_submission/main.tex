@@ -1,28 +1,35 @@
+\ifdefined\sjpsubmission
+\documentclass[a4paper,12pt]{article}
+\else
 \documentclass[a4paper,11pt]{article}
+\fi
 \usepackage{iftex}
-\ifPDFTeX\usepackage[utf8]{inputenc}\usepackage[T1]{fontenc}\else\usepackage{fontspec}\fi
-\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,float,hyperref,geometry,cite}
+\ifPDFTeX\usepackage[utf8]{inputenc}\usepackage[T1]{fontenc}\else\usepackage{fontspec}\ifdefined\sjpsubmission\setmainfont{Times New Roman}\fi\fi
+\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,float,hyperref,geometry,natbib}
+\ifdefined\sjpsubmission\usepackage{setspace}\doublespacing\fi
 \geometry{margin=1in}
 \hypersetup{hidelinks}
 \emergencystretch=2em
-\title{\textbf{Spirit in Physics:}\\\large Word-association response profiles in a five-participant feasibility study}
-\author{Jun Kawasaki$^{1}$, Kazuki Tainaka$^{2}$, Tomonori Takeuchi$^{3}$\\
+\title{Word-association latency and skin-potential response profiles: a five-participant pilot study}
+\ifdefined\sjpblind\author{}\date{}\else\author{Jun Kawasaki$^{1}$, Kazuki Tainaka$^{2}$, Tomonori Takeuchi$^{3}$\\
 \small $^{1}$Graduate School of Medical and Dental Sciences, Niigata University\\
 \small $^{2}$Brain Research Institute, Niigata University, Japan\\
 \small $^{3}$Department of Biomedicine, Aarhus University, Denmark\\
 \small \texttt{root@junkawasaki.com}}
-\date{September 28, 2026 (author review draft)}
+\date{October 7, 2026 (coauthor review draft; not submitted)}\fi
 
 \begin{document}
 \maketitle
 \begin{abstract}
-We assessed whether repeated word-association latency and skin-potential recordings could be summarized as auditable participant-specific response profiles. Eleven participant directories were present; five provided 970 valid clock-aligned trials over two sessions and 99 shared stimulus words. Pooled test--retest latency correlation across 471 matched participant--word pairs was weak ($r=0.24$). Mean cross-participant latency correlation was small ($\bar r=0.065$; exploratory two-sided permutation $p=0.038$), while the first principal-component variance share (27\%) was close to its shuffle-null mean (approximately 26\%; $p=0.21$). An in-sample rank-$[3,6,3]$ tensor approximation described 75.9\% of variance. These observations establish that the available records can be processed into descriptive profiles; they do not validate a psychological construct. The analyzed records contained no matched self-reference and other-target conditions or independent target-specific self-inclusion rating. Therefore this pilot does not measure self--other boundaries. Neither the dimensionless response index nor the shared latency pattern establishes physical energy, a Jungian complex, or a collective unconscious.
+We evaluated the feasibility of constructing participant-specific word-association response profiles from latency and skin-potential recordings and examined the repeatability of response latency. Eleven participant directories were present; five provided 970 valid clock-aligned trials over two sessions and 99 shared stimulus words. The descriptive pooled correlation between sessions across 471 matched participant--word pairs was weak ($r=0.24$); it is not an estimate of participant-level or map reliability. Mean cross-participant latency correlation was small ($\bar r=0.065$; exploratory two-sided permutation $p=0.038$), while the first principal-component variance share (27\%) was close to its shuffle-null mean (approximately 26\%; $p=0.21$). An in-sample rank-$[3,6,3]$ tensor approximation described 75.9\% of variance. The available records could be processed into descriptive profiles, but the weak pooled repeatability, small selected sample, and incomplete sensor provenance limit their interpretation. No independent criterion for psychological meaning was measured. This feasibility study does not validate a psychological construct or a clinically useful measurement in this sample.
 \end{abstract}
 
-\section{Introduction}
-Word-association latency and autonomic activity can vary with the stimulus and the participant \cite{Jung1910}. Graph and tensor methods can summarize these multivariate measurements \cite{KoldaBader2009}, but a constructed geometry has no psychological meaning without reliability and independent validation.
+\noindent\textbf{Keywords:} word association; response latency; skin potential; test--retest reliability; feasibility study
 
-A longer-term motivation of \emph{Spirit in Physics} is to ask whether response patterns could contribute to the study of self-related experience. The immediate empirical question is narrower: can the available word-association and skin-potential records be aligned and summarized reproducibly, and how stable are the measurements? This feasibility report concerns word-linked response profiles, not a test of target-specific self-inclusion. The proposal for matched self/target measurements is documented separately and has not been conducted.
+\section{Introduction}
+Word-association latency and autonomic activity can vary with the stimulus and the participant \citep{Jung1910}. Graph and tensor methods can summarize these multivariate measurements \citep{KoldaBader2009}, but a constructed geometry has no psychological meaning without reliability and independent validation.
+
+This pilot asks whether existing word-association events and skin-potential recordings can be aligned to form participant-specific descriptive profiles, and how repeatable the response latency is across the two sessions. We report the available sample, missing records, signal-processing choices, and exploratory cross-participant summaries so that the limits of the resulting profiles can be assessed. No independent criterion was collected to validate what the profiles represent.
 
 \section{Methods}
 \subsection{Ethics and consent}
@@ -52,13 +59,13 @@ W_{ij}=\exp\{-\lVert x_i-x_j\rVert^2/\sigma^2\},
 where $\sigma$ was the median nonzero pairwise distance. Coordinates were the nontrivial low-order eigenvectors of the symmetric normalized graph Laplacian $L_{sym}=I-D^{-1/2}WD^{-1/2}$. This is a graph-spectral response embedding, not Fisher information geometry.
 
 \subsection{Cohort tensor and exploratory statistics}
-Participant-by-word means were assembled as $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$ with $P=5$, $W=99$, and $F=3$. Missing cells were imputed first by the word--feature mean and then by the feature mean. Each feature was standardized across the participant--word plane. A truncated HOSVD/Tucker approximation \cite{KoldaBader2009} used ranks $[3,6,3]$. The graph spectrum, participation ratio, and reconstructed variance are descriptive summaries whose ranks were not selected on an independent sample.
+Participant-by-word means were assembled as $\mathcal{T}\in\mathbb{R}^{P\times W\times F}$ with $P=5$, $W=99$, and $F=3$. Missing cells were imputed first by the word--feature mean and then by the feature mean. Each feature was standardized across the participant--word plane. A truncated HOSVD/Tucker approximation \citep{KoldaBader2009} used ranks $[3,6,3]$. The graph spectrum, participation ratio, and reconstructed variance are descriptive summaries whose ranks were not selected on an independent sample.
 
-Test--retest stability was Pearson correlation of session-1 and session-2 latency over available matched participant--word pairs. Cross-participant structure was evaluated from the participant-by-word latency matrix. The mean off-diagonal Pearson correlation and first-principal-component variance share were compared with null distributions from 2,000 within-participant word permutations using seed 7. The correlation test was two-sided. These analyses were exploratory, were not preregistered, and no multiplicity-adjusted confirmatory claim is made.
+A descriptive pooled test--retest statistic was the Pearson correlation of session-1 and session-2 latency over available matched participant--word pairs. Because pairs are clustered within five participants and words, this pooled statistic is not an independent-observation estimate of population reliability or participant-specific map stability. Cross-participant structure was evaluated from the participant-by-word latency matrix. The mean off-diagonal Pearson correlation and first-principal-component variance share were compared with null distributions from 2,000 within-participant word permutations using seed 7. The correlation test was two-sided. These analyses were exploratory, were not preregistered, and no multiplicity-adjusted confirmatory claim is made.
 
 \section{Results}
 \subsection{Trial-level response landscape}
-All 970 valid trials are shown in Fig.~\ref{fig:landscape}; no percentile trimming is used in the revised display. Because color is computed from the plotted axes, separation of low and high $C$ is expected by construction. It demonstrates measurement coverage, not latent classes. Session-specific latency stability was weak ($r=0.24$, 471 matched participant--word observations).
+All 970 valid trials are shown in Fig.~\ref{fig:landscape}; no percentile trimming is used in the revised display. Because color is computed from the plotted axes, separation of low and high $C$ is expected by construction. It demonstrates measurement coverage, not latent classes. The descriptive pooled session-1/session-2 latency correlation was weak ($r=0.24$, 471 matched participant--word observations). Participant-level reliability estimates and confidence intervals remain to be calculated from a disclosure-reviewed derived table.
 
 \begin{figure}[t]
 \centering\includegraphics[width=\textwidth]{fig_landscape.pdf}
@@ -87,26 +94,28 @@ Mean off-diagonal cross-participant latency correlation was $\bar r=0.065$ and e
 The tensor had shape $5\times99\times3$. The median-distance kernel scale was $\sigma=4.2109$, the graph eigengap was 0.1948, and the spectrum's participation ratio was 10.89. Rank-$[3,6,3]$ HOSVD reconstructed 75.9\% of variance. With only five participants and three features, these values partly reflect dimensional constraints and do not establish a population manifold or a unique ``collective coordinate.''
 
 \section{Discussion}
-The analysis shows that the available event and signal records can be transformed into word-linked response embeddings and a cohort tensor. It does not show that distances in these spaces encode closeness to self or another target. The analyzed records did not include repeated matched-word responses under self and other-target instructions or an independent target-specific self-inclusion rating. A future study needs both before interpreting any distance as a candidate self-related measure.
+The analysis shows that the available event and signal records can be transformed into word-linked descriptive profiles. The principal measurement issue is weak pooled latency repeatability, which limits the interpretation of any derived map. The five-person availability-based subset also creates selection risk. These results justify improving acquisition and evaluating reliability in a separately designed study; they do not establish the validity of a psychological measure.
 
-The pooled latency repeatability of $r=0.24$ is weak and is not an estimate of map or target-distance reliability. The small cross-participant correlation is exploratory, arises from five complete cases after data inspection, and does not establish a collective-unconscious component. The first-PC comparison was null. Latency and skin-potential change, including their standardized sum $C$, have no calibrated conversion to thermodynamic energy; Landauer's bound on bit erasure cannot provide one for these observations. The graph is a descriptive embedding, not a Fisher-metric manifold.
+The pooled latency correlation is not an estimate of participant-level or map reliability. The small cross-participant correlation is exploratory and may reflect shared words or task structure; the first-PC comparison did not distinguish the observed result from the shuffle null. The in-sample tensor reconstruction likewise does not show predictive validity. The response-cost score and graph coordinates are descriptive transformations of the recorded features.
 
-A next experiment can compare self and named targets with identical words, collect independent self-inclusion and closeness ratings, and retest on a different day. Distances should be defined from prespecified response profiles, compared with simpler baselines, and assessed independently of the display map. Such an experiment would be a separate study, not a reinterpretation of these five participants.
+The next empirical study should first address the missing acquisition records, channel metadata, participant-level repeatability, and independent validation criteria. Its protocol and sample-size rationale require separate approval before data collection.
 
 \section{Limitations}
-The analytic sample was five of eleven participants and depended on local data availability. Missing raw annex objects and absent or misaligned recordings may introduce selection bias. Sampling at 1 Hz limits temporal interpretation. Channel choice was not preregistered, sensor metadata were incomplete, and no negative-control stimulus set or independent validation cohort was available. Semantic association responses and rubber-hand-illusion data were not analyzed. Statistics were exploratory and no adjustment for multiple analytic choices was applied. No matched self/target condition or independent self-inclusion rating was available in this analysis. Map repeatability and criterion validity were not measured. A separate proposed study has not been preregistered or approved for collection. The current repository is not publicly accessible and the deidentified derived dataset is not yet deposited in a durable public archive.
+The analytic sample was five of eleven participants and depended on local data availability. Missing raw annex objects and absent or misaligned recordings may introduce selection bias. Sampling at 1 Hz limits temporal interpretation. Channel choice was not preregistered, sensor metadata were incomplete, and no negative-control stimulus set or independent validation cohort was available. Semantic association responses and rubber-hand-illusion data were not analyzed. Statistics were exploratory and no adjustment for multiple analytic choices was applied. Participant-level map repeatability and criterion validity were not measured. Age, gender and other sample characteristics have not yet been verified against source records and cannot be reported in this draft. No prospective sample-size calculation was performed for this availability-based pilot. The current repository is not publicly accessible and the deidentified derived dataset is not yet deposited in a durable public archive.
 
 \section{Data and code availability}
 The analysis code, event-processing logic, and manuscript sources are maintained in the project repository. At the time of manuscript preparation the repository is private and participant-level recordings are not publicly released. A deidentified derived table, versioned code snapshot, environment specification, and checksums have not yet been deposited in a durable archive; the present analysis should therefore not be described as independently reproducible. Access to underlying research data is subject to ethics approval, consent, and an appropriate data-use process; inquiries may be directed to the corresponding author.
 
-\section{Earlier public version}
-An earlier, non-peer-reviewed project website article and PDF presented a broader thermodynamic interpretation and stronger claims about identified structures. This manuscript substantially revises those claims: no physical energy quantity, Jungian complex, or collective-unconscious structure was validated by the pilot. It is related public material and is superseded by the present analysis. See \url{https://spirit-in-physics.org/paper}.
+\ifdefined\sjpblind\else\section{Earlier public version}
+An earlier, non-peer-reviewed project website article and PDF presented these records in a broader conceptual framework and made stronger interpretive claims. The present manuscript is a substantially narrowed analysis of the empirical pilot. The related public version must be disclosed to the editor; see \url{https://spirit-in-physics.org/paper}.
+
+\fi
 
 \section{Conclusion}
-This five-participant pilot demonstrates the feasibility of producing descriptive word-association response profiles from the available records. Weak latency repeatability, a null principal-component comparison, missing sensor provenance and the absence of self/target conditions prevent a validated claim about self-inclusion, physical energy or collective psychology. The next empirical step is a separately approved, matched self/target study with independent ratings and different-day retest.
+This five-participant pilot shows that the available word-association and skin-potential records can be transformed into descriptive response profiles. The weak pooled latency correlation, missing sensor provenance, and lack of independent validation prevent a reliability or validity claim for the derived profiles. A larger, prospectively specified reliability study is needed before these profiles can support psychological interpretation.
 
 \begingroup\footnotesize
-\bibliographystyle{unsrt}
+\bibliographystyle{apalike}
 \bibliography{references}
 \endgroup
 \end{document}

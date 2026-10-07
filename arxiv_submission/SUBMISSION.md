@@ -1,5 +1,6 @@
-# arXiv submission package — Spirit in Physics
+# Pilot manuscript source package
 
+Current first-choice journal and submission gates: `SJP_SUBMISSION_20261007_ja.md`.
 Japanese revision materials: `REVISION_MATERIALS_JA.md`.
 
 For the journal-route decision and current go/no-go evidence, see
@@ -40,7 +41,7 @@ in the English arXiv source archive.
 
 - Primary category: `q-bio.NC`
 - Cross-list: `physics.bio-ph`
-- Title: *Spirit in Physics: Word-association response profiles in a five-participant feasibility study*
+- Title: *Word-association latency and skin-potential response profiles: a five-participant pilot study*
 - Authors: Jun Kawasaki, Kazuki Tainaka, Tomonori Takeuchi
 - License: confirm with all authors at submission.
 

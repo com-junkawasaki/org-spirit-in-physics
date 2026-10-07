@@ -1,3 +1,5 @@
+> **2026-10-07 update:** The earlier Frontiers-first recommendation below is superseded by the SJP-first plan in [`SJP_SUBMISSION_20261007_ja.md`](SJP_SUBMISSION_20261007_ja.md), following Tainaka’s new feedback. This file is retained as the dated 2026-09-28 decision record.
+
 # Peer-review submission readiness — Spirit in Physics
 
 Japanese companion: `PEER_REVIEW_READINESS_ja.md`.

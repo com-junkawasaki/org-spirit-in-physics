@@ -1,35 +1,14 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{}
 
-\bibitem{Jung1910}
-Carl~Gustav Jung.
+\bibitem[Jung, 1910]{Jung1910}
+Jung, C.~G. (1910).
 \newblock The association method.
-\newblock {\em The American Journal of Psychology}, 21(2):219--269, 1910.
+\newblock {\em The American Journal of Psychology}, 21(2):219--269.
 
-\bibitem{KoldaBader2009}
-Tamara~G. Kolda and Brett~W. Bader.
+\bibitem[Kolda and Bader, 2009]{KoldaBader2009}
+Kolda, T.~G. and Bader, B.~W. (2009).
 \newblock Tensor decompositions and applications.
-\newblock {\em SIAM Review}, 51(3):455--500, 2009.
-
-\bibitem{Shannon1948}
-Claude~E Shannon.
-\newblock A mathematical theory of communication.
-\newblock {\em The Bell System Technical Journal}, 27(3):379--423, 1948.
-
-\bibitem{Landauer1961}
-Rolf Landauer.
-\newblock Irreversibility and heat generation in the computing process.
-\newblock {\em IBM journal of research and development}, 5(3):183--191, 1961.
-
-\bibitem{Berut2012}
-Antoine B{\'e}rut, Artak Arakelyan, Artyom Petrosyan, Sergio Ciliberto, Raoul
-  Dillenschneider, and Eric Lutz.
-\newblock Experimental verification of landauer's principle linking information
-  and thermodynamics.
-\newblock {\em Nature}, 483(7388):187--189, 2012.
-
-\bibitem{Botvinick1998}
-Matthew Botvinick and Jonathan Cohen.
-\newblock Rubber hands 'feel' touch that eyes see.
-\newblock {\em Nature}, 391(6669):756--756, 1998.
+\newblock {\em SIAM Review}, 51(3):455--500.
+\newblock \url{https://doi.org/10.1137/07070111X}.
 
 \end{thebibliography}
