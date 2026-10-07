@@ -41,7 +41,7 @@ in the English arXiv source archive.
 
 - Primary category: `q-bio.NC`
 - Cross-list: `physics.bio-ph`
-- Title: *Word-association latency and skin-potential response profiles: a five-participant pilot study*
+- Title: *Spirit in Physics: Word-association latency and skin-potential response profiles in a five-participant pilot study*
 - Authors: Jun Kawasaki, Kazuki Tainaka, Tomonori Takeuchi
 - License: confirm with all authors at submission.
 

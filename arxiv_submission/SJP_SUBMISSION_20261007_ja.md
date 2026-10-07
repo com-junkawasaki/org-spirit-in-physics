@@ -4,6 +4,7 @@
 
 ## 投稿方針
 
+- 論文タイトルには **Spirit in Physics** を残す。英語表題は *Spirit in Physics: Word-association latency and skin-potential response profiles in a five-participant pilot study* とし、副題と本文で実証範囲を明示する。
 - 第一候補：*The Spanish Journal of Psychology*、**Research Article**、候補領域 **Experimental Psychology and Neuroscience**。田井中先生から川崎さんへ届いた今回の助言に沿い、5名の実測結果だけを独立した原著研究として提出する。
 - 研究の問い：言語連想課題の反応潜時と皮膚電位から参加者別の記述的応答プロファイルを構成できるか、2セッション間の潜時はどの程度安定するか。
 - 実測範囲：11名分の記録ディレクトリのうち時刻整合した5名、970試行、共通刺激語99語、471組のセッション間対応。参加者間相関、PCA、テンソルは探索的な副次要約。

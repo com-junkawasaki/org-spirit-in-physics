@@ -4,7 +4,7 @@
 
 Dear Editors,
 
-We would like to submit our Research Article, “Word-association latency and skin-potential response profiles: a five-participant pilot study,” for consideration in *The Spanish Journal of Psychology*, within Experimental Psychology and Neuroscience.
+We would like to submit our Research Article, “Spirit in Physics: Word-association latency and skin-potential response profiles in a five-participant pilot study,” for consideration in *The Spanish Journal of Psychology*, within Experimental Psychology and Neuroscience.
 
 This Niigata University pilot examines the feasibility of aligning word-association task events with skin-potential recordings to construct descriptive participant-specific response profiles. Five participants contributed 970 valid trials across two sessions. The pooled session-to-session latency correlation was weak, and the exploratory cross-participant summaries do not establish the validity of a psychological construct. We believe the transparent account of recording availability, processing choices, and measurement limitations may be useful to researchers developing behavioral and physiological response methods.
 

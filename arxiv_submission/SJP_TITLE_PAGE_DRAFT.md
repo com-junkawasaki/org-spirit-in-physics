@@ -2,7 +2,7 @@
 
 **Do not upload as a final declaration until every author has checked it.** The review manuscript is `sjp_blind.pdf`.
 
-**Title:** Word-association latency and skin-potential response profiles: a five-participant pilot study
+**Title:** Spirit in Physics: Word-association latency and skin-potential response profiles in a five-participant pilot study
 
 **Proposed author order and affiliations (verify official English forms):**
 
