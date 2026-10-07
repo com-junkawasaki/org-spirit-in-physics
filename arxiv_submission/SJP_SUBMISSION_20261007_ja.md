@@ -34,7 +34,7 @@
 | データとコード | **未公開** | 倫理・同意範囲を確認した匿名化派生表、コードの版固定、実行環境、チェックサム、利用条件を用意し、編集者・査読者へのアクセス方法を確定。現リポジトリを丸ごと公開しない。 |
 | 先行公開版 | **申告草稿あり** | https://spirit-in-physics.org/paper の旧記事・PDFとの関係、今回の結論の縮小、他誌の査読済み論文ではないことを編集部へ申告。 |
 | 著者の承認 | **未取得** | 田井中先生と竹内先生を含む全著者に、この版の本文・図・著者情報・申告内容を確認してもらい、投稿の明示的承認を記録。今回の助言は投稿戦略への賛同であり、原稿の最終承認とは別。 |
-| Cambridge APC | **本人から契約対象との情報、個別適用は未確定** | 新潟大学図書館とCambridgeの機関OA判定で、*この誌*、Research Article、採択時点、責任著者の新潟大学所属と機関メールが対象となり、著者負担0円になることを確認。投稿画面で対応著者・所属・機関を正確に指定。 |
+| Cambridge APC | **機関・誌・原稿種別の対象を確認、本人への最終適用は未確定** | 2026年10月7日、Cambridge判定画面で Niigata University、Full、Research Articles、SJPを確認。新潟大学案内ではOA出版を選ぶと自動で0円、大学への別申請不要。責任著者の所属資格を確認し、採択後の出版手続きで0円適用を確定する。[手順](NIIGATA_APC_SJP_20261007_ja.md)を参照。 |
 | AI利用申告 | **草稿作成にAIを使用** | 本改訂でAIによる英日文章編集を使用した事実を投稿規定に従って表題紙または所定欄に申告する。使用ツール名・版・日付・用途と、人間の著者による検証・責任を確定する。 |
 
 **判定：投稿先はSJPに定めて進めるが、現在は送信可能な完成稿ではない。** 上記の研究倫理、データ、共著者の必須ゲートを閉じた後、投稿システムでResearch Articleとして送信し、受付番号を保存する。
@@ -45,4 +45,5 @@
 - [SJP manuscript preparation](https://www.cambridge.org/core/services/aop-file-manager/file/5e8db6b790e8ff0adbe20fcd/Manuscript-preparation-guidelines-07-2023.pdf)：英語、APA形式、150–250語の要約、4–5キーワード、匿名査読用原稿など。PDFは2023年版のため、OA条件は現行サイトを優先。
 - [SJP submission checklist](https://www.cambridge.org/core/services/aop-file-manager/file/5e8db6afdc88ed0ae5be4e7b/SJP-IFC-Appendix-2.pdf)：標本、欠測、効果量・区間、データ提供、先行公開との関係。
 - [Cambridge OA funding](https://www.cambridge.org/core/journals/spanish-journal-of-psychology/information/journal-policies/open-access-options)：機関契約の適格性は個別に判定。
-- [新潟大学APC支援案内](https://www.lib.niigata-u.ac.jp/openaccess/apc/)：Cambridge契約と著者条件を確認する窓口。
+- [新潟大学APC支援案内](https://www.lib.niigata-u.ac.jp/openaccess/apc/)：Cambridge対象誌の自動0円適用と大学への別申請不要。
+- [Cambridge Eligibility checker](https://www.cambridge.org/core/eligibility-checker)：Niigata Universityの契約でSJPとResearch Articlesを2026年10月7日に確認。

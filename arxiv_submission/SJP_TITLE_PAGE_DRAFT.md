@@ -10,7 +10,7 @@
 2. Kazuki Tainaka — Brain Research Institute, Niigata University, Japan
 3. Tomonori Takeuchi — Department of Biomedicine, Aarhus University, Denmark
 
-**Corresponding author:** Jun Kawasaki. Confirm the current institutional Niigata University email, ORCID, mailing address, and Cambridge OA eligibility before entry in the journal system. The existing personal address in the arXiv draft is not evidence of institutional agreement eligibility.
+**Corresponding author:** Jun Kawasaki. Confirm the corresponding author’s current Niigata University affiliation, official English unit name, ORCID, mailing address, and Cambridge OA eligibility before entry in the journal system. Use an institutional email when available to help identification; Cambridge’s public eligibility rule is based on affiliation, and a university email is not stated as an absolute requirement. The existing personal address in the arXiv draft does not by itself establish institutional agreement eligibility. See `NIIGATA_APC_SJP_20261007_ja.md`.
 
 **Ethics and consent:** Verify the original Niigata University approval notice (project materials state 2024-0269, 1 March 2025), approved protocol version, and consent scope before writing the final declaration.
 

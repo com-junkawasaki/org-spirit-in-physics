@@ -1,6 +1,7 @@
 # Pilot manuscript source package
 
 Current first-choice journal and submission gates: `SJP_SUBMISSION_20261007_ja.md`.
+Niigata University/Cambridge APC route: `NIIGATA_APC_SJP_20261007_ja.md`.
 Japanese revision materials: `REVISION_MATERIALS_JA.md`.
 
 For the journal-route decision and current go/no-go evidence, see
